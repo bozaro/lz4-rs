@@ -16,6 +16,8 @@ pub use self::libc::{
 
 pub type LZ4FCompressionContext = *mut c_void;
 
+pub type LZ4FDecompressionContext = *mut c_void;
+
 pub type LZ4FErrorCode = size_t;
 
 #[repr(u32)]
@@ -42,7 +44,7 @@ pub enum ContentChecksum
 }
 
 #[repr(C)]
-pub struct LZ4FframeInfo
+pub struct LZ4FFrameInfo
 {
   pub block_size_id: BlockSizeId,
   pub block_mode: BlockMode,
@@ -53,7 +55,7 @@ pub struct LZ4FframeInfo
 #[repr(C)]
 pub struct LZ4FPreferences
 {
-  pub frame_info: LZ4FframeInfo,
+  pub frame_info: LZ4FFrameInfo,
   pub compression_level: c_uint, // 0 == default (fast mode); values above 16 count as 16
   pub auto_flush: c_uint, // 1 == always flush : reduce need for tmp buffer
   pub reserved: [c_uint; 4],
@@ -63,6 +65,13 @@ pub struct LZ4FPreferences
 pub struct LZ4FCompressOptions
 {
   pub stable_src: c_uint, // 1 == src content will remain available on future calls to LZ4F_compress(); avoid saving src content within tmp buffer as future dictionary
+  pub reserved: [c_uint; 3],
+}
+
+#[repr(C)]
+pub struct LZ4FDecompressOptions
+{
+  pub stable_dst: c_uint, // guarantee that decompressed data will still be there on next function calls (avoid storage into tmp buffers)
   pub reserved: [c_uint; 3],
 }
 
@@ -90,10 +99,10 @@ extern {
 	 * Object can release its memory using LZ4F_freeCompressionContext();
 	 */
 	// LZ4F_errorCode_t LZ4F_createCompressionContext(LZ4F_compressionContext_t* LZ4F_compressionContextPtr, unsigned version);
-	pub fn LZ4F_createCompressionContext(compressionContext: &mut LZ4FCompressionContext, version: c_uint) -> LZ4FErrorCode;
+	pub fn LZ4F_createCompressionContext(ctx: &mut LZ4FCompressionContext, version: c_uint) -> LZ4FErrorCode;
 
 	// LZ4F_errorCode_t LZ4F_freeCompressionContext(LZ4F_compressionContext_t LZ4F_compressionContext);
-	pub fn LZ4F_freeCompressionContext(compressionContext: LZ4FCompressionContext) -> LZ4FErrorCode;
+	pub fn LZ4F_freeCompressionContext(ctx: LZ4FCompressionContext) -> LZ4FErrorCode;
 
 	/* LZ4F_compressBegin() :
 	 * will write the frame header into dstBuffer.
@@ -103,7 +112,7 @@ extern {
 	 * or an error code (can be tested using LZ4F_isError())
 	 */
 	// size_t LZ4F_compressBegin(LZ4F_compressionContext_t compressionContext, void* dstBuffer, size_t dstMaxSize, const LZ4F_preferences_t* preferencesPtr);
-	pub fn LZ4F_compressBegin(compressionContext: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, preferencesPtr: *const LZ4FPreferences) -> LZ4FErrorCode;
+	pub fn LZ4F_compressBegin(ctx: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, preferencesPtr: *const LZ4FPreferences) -> LZ4FErrorCode;
 
 	/* LZ4F_compressBound() :
 	 * Provides the minimum size of Dst buffer given srcSize to handle worst case situations.
@@ -123,7 +132,7 @@ extern {
 	 * The function outputs an error code if it fails (can be tested using LZ4F_isError())
 	 */
 	// size_t LZ4F_compressUpdate(LZ4F_compressionContext_t compressionContext, void* dstBuffer, size_t dstMaxSize, const void* srcBuffer, size_t srcSize, const LZ4F_compressOptions_t* compressOptionsPtr);
-	pub fn LZ4F_compressUpdate(compressionContext: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, srcBuffer: *const u8, srcSize: size_t, compressOptionsPtr: *const LZ4FCompressOptions) -> size_t;
+	pub fn LZ4F_compressUpdate(ctx: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, srcBuffer: *const u8, srcSize: size_t, compressOptionsPtr: *const LZ4FCompressOptions) -> size_t;
 
 	/* LZ4F_flush()
 	 * Should you need to create compressed data immediately, without waiting for a block to be filled,
@@ -134,7 +143,7 @@ extern {
 	 * The function outputs an error code if it fails (can be tested using LZ4F_isError())
 	 */
 	// size_t LZ4F_flush(LZ4F_compressionContext_t compressionContext, void* dstBuffer, size_t dstMaxSize, const LZ4F_compressOptions_t* compressOptionsPtr);
-	pub fn LZ4F_flush(compressionContext: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, compressOptionsPtr: *const LZ4FCompressOptions) -> LZ4FErrorCode;
+	pub fn LZ4F_flush(ctx: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, compressOptionsPtr: *const LZ4FCompressOptions) -> LZ4FErrorCode;
 
 	/* LZ4F_compressEnd()
 	 * When you want to properly finish the compressed frame, just call LZ4F_compressEnd().
@@ -146,7 +155,70 @@ extern {
 	 * compressionContext can then be used again, starting with LZ4F_compressBegin().
 	 */
 	// size_t LZ4F_compressEnd(LZ4F_compressionContext_t compressionContext, void* dstBuffer, size_t dstMaxSize, const LZ4F_compressOptions_t* compressOptionsPtr);
-	pub fn LZ4F_compressEnd(compressionContext: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, compressOptionsPtr: *const LZ4FCompressOptions) -> LZ4FErrorCode;
+	pub fn LZ4F_compressEnd(ctx: LZ4FCompressionContext, dstBuffer: *mut u8, dstMaxSize: size_t, compressOptionsPtr: *const LZ4FCompressOptions) -> LZ4FErrorCode;
+
+	/* LZ4F_createDecompressionContext() :
+	 * The first thing to do is to create a decompressionContext object, which will be used in all decompression operations.
+	 * This is achieved using LZ4F_createDecompressionContext().
+	 * The version provided MUST be LZ4F_VERSION. It is intended to track potential version differences between different binaries.
+	 * The function will provide a pointer to a fully allocated and initialized LZ4F_decompressionContext_t object.
+	 * If the result LZ4F_errorCode_t is not OK_NoError, there was an error during context creation.
+	 * Object can release its memory using LZ4F_freeDecompressionContext();
+	 */
+	// LZ4F_errorCode_t LZ4F_createDecompressionContext(LZ4F_decompressionContext_t* ctxPtr, unsigned version);
+	pub fn LZ4F_createDecompressionContext(ctx: &mut LZ4FDecompressionContext, version: c_uint) -> LZ4FErrorCode;
+
+	// LZ4F_errorCode_t LZ4F_freeDecompressionContext(LZ4F_decompressionContext_t ctx);
+	pub fn LZ4F_freeDecompressionContext(ctx: LZ4FDecompressionContext) -> LZ4FErrorCode;
+
+	/* LZ4F_getFrameInfo()
+	 * This function decodes frame header information, such as blockSize.
+	 * It is optional : you could start by calling directly LZ4F_decompress() instead.
+	 * The objective is to extract header information without starting decompression, typically for allocation purposes.
+	 * LZ4F_getFrameInfo() can also be used *after* starting decompression, on a valid LZ4F_decompressionContext_t.
+	 * The number of bytes read from srcBuffer will be provided within *srcSizePtr (necessarily <= original value).
+	 * You are expected to resume decompression from where it stopped (srcBuffer + *srcSizePtr)
+	 * The function result is an hint of how many srcSize bytes LZ4F_decompress() expects for next call,
+	 * or an error code which can be tested using LZ4F_isError().
+	 */
+	// size_t LZ4F_getFrameInfo(LZ4F_decompressionContext_t ctx,
+	// 					LZ4F_frameInfo_t* frameInfoPtr,
+	// 					const void* srcBuffer, size_t* srcSizePtr);
+	pub fn LZ4F_getFrameInfo(ctx: LZ4FDecompressionContext,
+						frameInfoPtr: &mut LZ4FFrameInfo,
+						srcBuffer: *const u8,
+						srcSizePtr: &mut size_t) -> LZ4FErrorCode;
+
+	/* LZ4F_decompress()
+	 * Call this function repetitively to regenerate data compressed within srcBuffer.
+	 * The function will attempt to decode *srcSizePtr bytes from srcBuffer, into dstBuffer of maximum size *dstSizePtr.
+	 *
+	 * The number of bytes regenerated into dstBuffer will be provided within *dstSizePtr (necessarily <= original value).
+	 *
+	 * The number of bytes read from srcBuffer will be provided within *srcSizePtr (necessarily <= original value).
+	 * If number of bytes read is < number of bytes provided, then decompression operation is not completed.
+	 * It typically happens when dstBuffer is not large enough to contain all decoded data.
+	 * LZ4F_decompress() must be called again, starting from where it stopped (srcBuffer + *srcSizePtr)
+	 * The function will check this condition, and refuse to continue if it is not respected.
+	 *
+	 * dstBuffer is supposed to be flushed between each call to the function, since its content will be overwritten.
+	 * dst arguments can be changed at will with each consecutive call to the function.
+	 *
+	 * The function result is an hint of how many srcSize bytes LZ4F_decompress() expects for next call.
+	 * Schematically, it's the size of the current (or remaining) compressed block + header of next block.
+	 * Respecting the hint provides some boost to performance, since it does skip intermediate buffers.
+	 * This is just a hint, you can always provide any srcSize you want.
+	 * When a frame is fully decoded, the function result will be 0. (no more data expected)
+	 * If decompression failed, function result is an error code, which can be tested using LZ4F_isError().
+	 */
+	// size_t LZ4F_decompress(LZ4F_decompressionContext_t ctx,
+	// 					void* dstBuffer, size_t* dstSizePtr,
+	// 					const void* srcBuffer, size_t* srcSizePtr,
+	// 					const LZ4F_decompressOptions_t* optionsPtr);
+	pub fn LZ4F_decompress(ctx: LZ4FDecompressionContext,
+						dstBuffer: *mut u8, dstSizePtr: &mut size_t,
+						srcBuffer: *const u8, srcSizePtr: &mut size_t,
+						optionsPtr: *const LZ4FDecompressOptions) -> LZ4FErrorCode;
 
 	// int LZ4_versionNumber(void)
 	pub fn LZ4_versionNumber() -> i32;

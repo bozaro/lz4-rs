@@ -23,7 +23,7 @@ impl<W: Writer> Encoder<W> {
 	pub fn new(w: W, compression_level: u32) -> IoResult<Encoder<W>> {
 		let preferences = LZ4FPreferences
 		{
-			frame_info: LZ4FframeInfo
+			frame_info: LZ4FFrameInfo
 			{
 				block_size_id: BlockSizeId::Default,
 				block_mode: BlockMode::Linked,
