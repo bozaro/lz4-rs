@@ -3,6 +3,7 @@ name = "lz4-rs"
 license = "MIT"
 version = "1.0.127"
 authors = [ "Artem V. Navrotskiy <bozaro@users.noreply.github.com>" ]
+build = "src/build.rs"
 
-[lib]
-name = "lz4-rs"
+[build-dependencies]
+gcc = "0.3"

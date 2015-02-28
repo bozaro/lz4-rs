@@ -7,7 +7,6 @@
 // int LZ4_decompress_safe_continue(LZ4_streamDecode_t* LZ4_streamDecode, const char* source, char* dest, int compressedSize, int maxDecompressedSize)
 // int LZ4_freeStreamDecode(LZ4_streamDecode_t* LZ4_stream)
 
-#[link(name = "liblz4")]
 extern {
 	pub fn LZ4_versionNumber() -> i32;
 }
