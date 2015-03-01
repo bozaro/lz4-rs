@@ -95,5 +95,5 @@ fn test_smoke() {
 	let mut actual = [0; BUFFER_SIZE];
 	
 	let size = decoder.read(&mut actual).unwrap();
-	assert_eq!(expected, actual[0..size].as_slice());
+	assert_eq!(expected, &actual[0..size]);
 }

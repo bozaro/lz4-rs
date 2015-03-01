@@ -263,9 +263,12 @@ pub fn check_error(code: LZ4FErrorCode) -> IoResult<usize>
 	Ok(code as usize)
 }
 
+pub fn version() -> i32
+{
+	unsafe {LZ4_versionNumber()}
+}
+
 #[test]
 fn test_version_number() {
-	unsafe {
-		LZ4_versionNumber();
-	}
+	version();
 }

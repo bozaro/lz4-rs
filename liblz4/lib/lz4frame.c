@@ -739,10 +739,10 @@ static size_t LZ4F_decodeHeader(LZ4F_dctx_internal_t* dctxPtr, const BYTE* srcPt
     size_t bufferNeeded;
 
     /* need to decode header to get frameInfo */
-    if (srcSize < 7) return (size_t)-ERROR_GENERIC;   /* minimal header size */
+    if (srcSize < 7) return (size_t)-ERROR_TEST;   /* minimal header size */
 
     /* control magic number */
-    if (LZ4F_readLE32(srcPtr) != LZ4F_MAGICNUMBER) return (size_t)-ERROR_GENERIC;
+    if (LZ4F_readLE32(srcPtr) != LZ4F_MAGICNUMBER) return (size_t)-ERROR_TEST;
     srcPtr += 4;
 
     /* Flags */

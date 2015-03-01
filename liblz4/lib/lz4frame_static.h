@@ -48,7 +48,9 @@ extern "C" {
  * Error management
  * ************************************/
 #define LZ4F_LIST_ERRORS(ITEM) \
-        ITEM(OK_NoError) ITEM(ERROR_GENERIC) \
+        ITEM(OK_NoError)  \
+	ITEM(ERROR_TEST) \
+	ITEM(ERROR_GENERIC) \
         ITEM(ERROR_maxBlockSize_invalid) ITEM(ERROR_blockMode_invalid) ITEM(ERROR_contentChecksumFlag_invalid) \
         ITEM(ERROR_compressionLevel_invalid) \
         ITEM(ERROR_allocation_failed) \
