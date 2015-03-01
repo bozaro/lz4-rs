@@ -1,5 +1,6 @@
 use std::old_io::Reader;
 use std::old_io::IoResult;
+use std::old_io::IoError;
 use std::old_io::IoErrorKind;
 use std::ptr;
 use super::liblz4::*;
@@ -13,7 +14,10 @@ pub struct DecoderContext {
 pub struct Decoder<R> {
 	c: DecoderContext,
 	r: R,
-	b: [u8; BUFFER_SIZE]
+	buf: [u8; BUFFER_SIZE],
+	pos: usize,
+	len: usize,
+	eof: bool,
 }
 
 impl<R: Reader> Decoder<R> {
@@ -24,7 +28,10 @@ impl<R: Reader> Decoder<R> {
 		Ok (Decoder {
 			r: r,
 			c: try! (DecoderContext::new()),
-			b: [0; BUFFER_SIZE]
+			buf: [0; BUFFER_SIZE],
+			pos: BUFFER_SIZE,
+			len: BUFFER_SIZE,
+			eof: false,
 		})
 	}
 }
@@ -32,28 +39,40 @@ impl<R: Reader> Decoder<R> {
 impl<R: Reader> Reader for Decoder<R> {
 	fn read(&mut self, buf: &mut [u8]) -> IoResult<usize>
 	{
+		if self.eof
+		{
+			return Err(IoError{
+				kind: IoErrorKind::EndOfFile,
+				desc: "End of LZ4 compressed stream",
+				detail: None
+			});
+		}
 		let mut dst_offset: usize = 0;
-		println! ("begin");
 		while dst_offset < buf.len()
 		{
-			let mut src_offset: usize = 0;
-			let src_len = match self.r.read(&mut self.b)
+			if self.pos >= self.len
 			{
-				Ok(len) => len,
-				Err(ref e) if e.kind == IoErrorKind::EndOfFile => break,
-				Err(e) => return Err(e)
-			};
-			while (dst_offset < buf.len()) && (src_offset < src_len)
+				self.pos = 0;
+				self.len = match self.r.read(&mut self.buf)
+				{
+					Ok(len) => len,
+					Err(ref e) if e.kind == IoErrorKind::EndOfFile => break,
+					Err(e) => return Err(e)
+				}
+			}
+			while (dst_offset < buf.len()) && (self.pos < self.len)
 			{
-				let mut src_size = (src_len - src_offset) as size_t;
+				let mut src_size = (self.len - self.pos) as size_t;
 				let mut dst_size = (buf.len() - dst_offset) as size_t;
-				println! ("{}:{} {}:{}", src_offset, src_size, dst_offset, dst_size);
-				try! (check_error(unsafe {LZ4F_decompress(self.c.c, buf[dst_offset..].as_mut_ptr(), &mut dst_size, self.b[src_offset..].as_ptr(), &mut src_size, ptr::null())}));
-				src_offset += src_size as usize;
+				let len = try! (check_error(unsafe {LZ4F_decompress(self.c.c, buf[dst_offset..].as_mut_ptr(), &mut dst_size, self.buf[self.pos..].as_ptr(), &mut src_size, ptr::null())}));
+				self.pos += src_size as usize;
 				dst_offset += dst_size as usize;
+				if len == 0 {
+					self.eof = true;
+					break;
+				}
 			}
 		}
-		println! ("end");
 		Ok(dst_offset)
 	}
 }

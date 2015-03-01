@@ -13,7 +13,7 @@ pub struct EncoderContext {
 pub struct Encoder<W> {
 	c: EncoderContext,
 	w: W,
-	b: Vec<u8>
+	buf: Vec<u8>
 }
 
 impl<W: Writer> Encoder<W> {
@@ -37,7 +37,7 @@ impl<W: Writer> Encoder<W> {
 		let mut encoder = Encoder {
 			w: w,
 			c: try! (EncoderContext::new()),
-			b: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(BUFFER_SIZE as size_t, &preferences)})))
+			buf: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(BUFFER_SIZE as size_t, &preferences)})))
 		};
 		try! (encoder.write_header(&preferences));
 		Ok (encoder)
@@ -46,18 +46,18 @@ impl<W: Writer> Encoder<W> {
 	fn write_header(&mut self, preferences: &LZ4FPreferences) -> IoResult<()>
 	{
 		unsafe {
-			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.b.as_mut_ptr(), self.b.capacity() as size_t, preferences)));
-			self.b.set_len(len);
+			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, preferences)));
+			self.buf.set_len(len);
 		}
-		self.w.write_all(&self.b)
+		self.w.write_all(&self.buf)
 	}
 
 	fn write_end(&mut self) -> IoResult<()> {
 		unsafe {
-			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.b.as_mut_ptr(), self.b.capacity() as size_t, ptr::null())));
-			self.b.set_len(len);
+			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, ptr::null())));
+			self.buf.set_len(len);
 		};
-		self.w.write_all(&self.b)
+		self.w.write_all(&self.buf)
 	}
 
 	/// This function is used to flag that this session of compression is done
@@ -76,9 +76,9 @@ impl<W: Writer> Writer for Encoder<W> {
 		{
 			let size = cmp::min(buf.len() - offset, BUFFER_SIZE);
 			unsafe {
-				let len = try! (check_error(LZ4F_compressUpdate(self.c.c, self.b.as_mut_ptr(), self.b.capacity() as size_t, buf[offset..].as_ptr(), size as size_t, ptr::null())));
-				self.b.set_len(len);
-				try! (self.w.write_all(&self.b));
+				let len = try! (check_error(LZ4F_compressUpdate(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, buf[offset..].as_ptr(), size as size_t, ptr::null())));
+				self.buf.set_len(len);
+				try! (self.w.write_all(&self.buf));
 			}
 			offset += size;
 			
@@ -90,14 +90,14 @@ impl<W: Writer> Writer for Encoder<W> {
 		loop
 		{
 			unsafe {
-				let len = try! (check_error(LZ4F_flush(self.c.c, self.b.as_mut_ptr(), self.b.capacity() as size_t, ptr::null())));
+				let len = try! (check_error(LZ4F_flush(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, ptr::null())));
 				if len == 0
 				{
 					break;
 				}
-				self.b.set_len(len);
+				self.buf.set_len(len);
 			};
-			try! (self.w.write_all(&self.b));
+			try! (self.w.write_all(&self.buf));
 		}
 		self.w.flush()
 	}
