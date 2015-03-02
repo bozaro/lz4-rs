@@ -1,7 +1,7 @@
 #![feature(old_io)]
 #![feature(old_path)]
 #![feature(os)]
-extern crate "lz4-rs" as lz4;
+extern crate lz4;
 
 use std::os;
 use std::old_path::Path;

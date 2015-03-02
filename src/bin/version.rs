@@ -1,4 +1,4 @@
-extern crate "lz4-rs" as lz4;
+extern crate lz4;
 
 use lz4::liblz4::*;
 

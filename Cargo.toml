@@ -1,5 +1,5 @@
 [package]
-name = "lz4-rs"
+name = "lz4"
 license = "MIT"
 version = "1.0.127"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
