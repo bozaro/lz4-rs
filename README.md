@@ -1,3 +1,29 @@
+lz4
+====
+
+This repository contains binding for lz4 compression library (https://code.google.com/p/lz4/).
+
+LZ4 is a very fast lossless compression algorithm, providing compression speed at 400 MB/s per core, with near-linear scalability for multi-threaded applications. It also features an extremely fast decoder, with speed in multiple GB/s per core, typically reaching RAM speed limits on multi-core systems.
+
+[![Build Status](https://travis-ci.org/bozaro/lz4-rs.svg?branch=master)](https://travis-ci.org/bozaro/lz4-rs)
+
+## Usage
+
+Put this in your `Cargo.toml`:
+
+```toml
+[dependencies]
+lz4 = "*"
+```
+
+And this in your crate root:
+
+```rust
+extern crate lz4;
+```
+
+Sample code for compression/decompression:
+```rust
 #![feature(old_io)]
 #![feature(old_path)]
 #![feature(os)]
@@ -13,7 +39,6 @@ use std::old_io::Writer;
 
 fn main()
 {
-	println!("LZ4 version: {}", lz4::version());
 	let suffix = ".lz4";
 	for arg in os::args()[1..].iter()
 	{
@@ -66,3 +91,4 @@ fn copy(src: &mut Reader, dst: &mut Writer) -> IoResult<()>
 	}
 	Ok(())
 }
+```
