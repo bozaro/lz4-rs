@@ -7,7 +7,7 @@ use super::liblz4::*;
 
 const BUFFER_SIZE: usize = 32 * 1024;
 
-pub struct DecoderContext {
+struct DecoderContext {
 	c: LZ4FDecompressionContext,
 }
 
