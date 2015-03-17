@@ -1,5 +1,5 @@
-use std::old_io::Writer;
-use std::old_io::IoResult;
+use std::io::Write;
+use std::io::Result;
 use std::cmp;
 use std::ptr;
 use super::liblz4::*;
@@ -16,11 +16,11 @@ pub struct Encoder<W> {
 	buf: Vec<u8>
 }
 
-impl<W: Writer> Encoder<W> {
+impl<W: Write> Encoder<W> {
 	/// Creates a new encoder which will have its output written to the given
 	/// output stream. The output stream can be re-acquired by calling
 	/// `finish()`
-	pub fn new(w: W, compression_level: u32) -> IoResult<Encoder<W>> {
+	pub fn new(w: W, compression_level: u32) -> Result<Encoder<W>> {
 		let preferences = LZ4FPreferences
 		{
 			frame_info: LZ4FFrameInfo
@@ -43,7 +43,7 @@ impl<W: Writer> Encoder<W> {
 		Ok (encoder)
 	}
 	
-	fn write_header(&mut self, preferences: &LZ4FPreferences) -> IoResult<()>
+	fn write_header(&mut self, preferences: &LZ4FPreferences) -> Result<()>
 	{
 		unsafe {
 			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, preferences)));
@@ -52,7 +52,7 @@ impl<W: Writer> Encoder<W> {
 		self.w.write_all(&self.buf)
 	}
 
-	fn write_end(&mut self) -> IoResult<()> {
+	fn write_end(&mut self) -> Result<()> {
 		unsafe {
 			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, ptr::null())));
 			self.buf.set_len(len);
@@ -63,14 +63,14 @@ impl<W: Writer> Encoder<W> {
 	/// This function is used to flag that this session of compression is done
 	/// with. The stream is finished up (final bytes are written), and then the
 	/// wrapped writer is returned.
-	pub fn finish(mut self) -> (W, IoResult<()>) {
+	pub fn finish(mut self) -> (W, Result<()>) {
 		let result = self.write_end();
 		(self.w, result)
 	}
 }
 
-impl<W: Writer> Writer for Encoder<W> {
-	fn write_all(&mut self, buf: &[u8]) -> IoResult<()> {
+impl<W: Write> Write for Encoder<W> {
+	fn write(&mut self, buf: &[u8]) -> Result<usize> {
 		let mut offset = 0;
 		while offset < buf.len()
 		{
@@ -83,10 +83,10 @@ impl<W: Writer> Writer for Encoder<W> {
 			offset += size;
 			
 		}
-		Ok(())
+		Ok(buf.len())
 	}
     
-	fn flush(&mut self) -> IoResult<()> {
+	fn flush(&mut self) -> Result<()> {
 		loop
 		{
 			unsafe {
@@ -104,7 +104,7 @@ impl<W: Writer> Writer for Encoder<W> {
 }
 
 impl EncoderContext {
-	fn new() -> IoResult<EncoderContext>
+	fn new() -> Result<EncoderContext>
 	{
 		let mut context: LZ4FCompressionContext = ptr::null_mut();
 		try! (check_error(unsafe {
@@ -128,7 +128,7 @@ impl Drop for EncoderContext {
 #[test]
 fn test_smoke() {
 	let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
-	encoder.write_all(b"Some data").unwrap();
+	encoder.write(b"Some data").unwrap();
 	let (_, result) = encoder.finish();
 	result.unwrap();
 }

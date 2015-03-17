@@ -1,8 +1,7 @@
 extern crate libc;
 
-use std::old_io::IoResult;
-use std::old_io::IoError;
-use std::old_io::IoErrorKind;
+use std::io::Error;
+use std::io::ErrorKind;
 use std::str;
 use std::ffi::CStr;
 
@@ -246,18 +245,14 @@ extern {
 	
 }
 
-pub fn check_error(code: LZ4FErrorCode) -> IoResult<usize>
+pub fn check_error(code: LZ4FErrorCode) -> Result<usize, Error>
 {
 	unsafe
 	{
 		if LZ4F_isError(code) != 0
 		{
 			let error_name = LZ4F_getErrorName(code);
-			return Err(IoError {
-				kind: IoErrorKind::OtherIoError,
-				desc: "LZ4 error",
-				detail: Some(str::from_utf8(CStr::from_ptr(error_name).to_bytes()).unwrap().to_string())
-			})
+			return Err(Error::new(ErrorKind::Other, "LZ4 error", Some(str::from_utf8(CStr::from_ptr(error_name).to_bytes()).unwrap().to_string())));
 		}
 	}
 	Ok(code as usize)

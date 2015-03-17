@@ -1,5 +1,4 @@
-#![feature(old_io)]
-#![feature(std_misc)]
+#![feature(io)]
 #![feature(libc)]
 
 pub mod liblz4;

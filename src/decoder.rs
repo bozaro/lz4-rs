@@ -1,7 +1,5 @@
-use std::old_io::Reader;
-use std::old_io::IoResult;
-use std::old_io::IoError;
-use std::old_io::IoErrorKind;
+use std::io::Read;
+use std::io::Result;
 use std::ptr;
 use super::liblz4::*;
 
@@ -20,11 +18,11 @@ pub struct Decoder<R> {
 	eof: bool,
 }
 
-impl<R: Reader> Decoder<R> {
+impl<R: Read> Decoder<R> {
 	/// Creates a new encoder which will have its output written to the given
 	/// output stream. The output stream can be re-acquired by calling
 	/// `finish()`
-	pub fn new(r: R) -> IoResult<Decoder<R>> {
+	pub fn new(r: R) -> Result<Decoder<R>> {
 		Ok (Decoder {
 			r: r,
 			c: try! (DecoderContext::new()),
@@ -36,16 +34,12 @@ impl<R: Reader> Decoder<R> {
 	}
 }
 
-impl<R: Reader> Reader for Decoder<R> {
-	fn read(&mut self, buf: &mut [u8]) -> IoResult<usize>
+impl<R: Read> Read for Decoder<R> {
+	fn read(&mut self, buf: &mut [u8]) -> Result<usize>
 	{
 		if self.eof
 		{
-			return Err(IoError{
-				kind: IoErrorKind::EndOfFile,
-				desc: "End of LZ4 compressed stream",
-				detail: None
-			});
+			return Ok(0);
 		}
 		let mut dst_offset: usize = 0;
 		while dst_offset < buf.len()
@@ -53,11 +47,10 @@ impl<R: Reader> Reader for Decoder<R> {
 			if self.pos >= self.len
 			{
 				self.pos = 0;
-				self.len = match self.r.read(&mut self.buf)
+				self.len = try! (self.r.read(&mut self.buf));
+				if self.len <= 0
 				{
-					Ok(len) => len,
-					Err(ref e) if e.kind == IoErrorKind::EndOfFile => break,
-					Err(e) => return Err(e)
+					break;
 				}
 			}
 			while (dst_offset < buf.len()) && (self.pos < self.len)
@@ -78,7 +71,7 @@ impl<R: Reader> Reader for Decoder<R> {
 }
 
 impl DecoderContext {
-	fn new() -> IoResult<DecoderContext>
+	fn new() -> Result<DecoderContext>
 	{
 		let mut context: LZ4FDecompressionContext = ptr::null_mut();
 		try! (check_error(unsafe {
@@ -102,15 +95,17 @@ impl Drop for DecoderContext {
 #[test]
 fn test_smoke() {
 	use super::encoder::*;
-	use std::old_io::MemReader;
+	use std::io::Cursor;
+	use std::io::Read;
+	use std::io::Write;
 
 	let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
 	let expected = b"Some data";
-	encoder.write_all(expected).unwrap();
+	encoder.write(expected).unwrap();
 	let (buffer, result) = encoder.finish();
 	result.unwrap();
 
-	let mut decoder = Decoder::new(MemReader::new(buffer));
+	let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
 	let mut actual = [0; BUFFER_SIZE];
 	
 	let size = decoder.read(&mut actual).unwrap();
