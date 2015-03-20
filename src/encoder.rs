@@ -126,7 +126,7 @@ impl Drop for EncoderContext {
 }
 
 #[test]
-fn test_smoke() {
+fn test_encoder_smoke() {
 	let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
 	encoder.write(b"Some data").unwrap();
 	let (_, result) = encoder.finish();

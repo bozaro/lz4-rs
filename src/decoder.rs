@@ -93,7 +93,7 @@ impl Drop for DecoderContext {
 }
 
 #[test]
-fn test_smoke() {
+fn test_decoder_smoke() {
 	use super::encoder::*;
 	use std::io::Cursor;
 	use std::io::Read;
