@@ -24,23 +24,21 @@ extern crate lz4;
 
 Sample code for compression/decompression:
 ```rust
-#![feature(old_io)]
-#![feature(old_path)]
-#![feature(os)]
 extern crate lz4;
 
-use std::os;
-use std::old_path::Path;
-use std::old_io::fs::File;
-use std::old_io::IoResult;
-use std::old_io::IoErrorKind;
-use std::old_io::Reader;
-use std::old_io::Writer;
+use std::iter::FromIterator;
+use std::env;
+use std::fs::File;
+use std::io::Result;
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
 
 fn main()
 {
+	println!("LZ4 version: {}", lz4::version());
 	let suffix = ".lz4";
-	for arg in os::args()[1..].iter()
+	for arg in Vec::from_iter(env::args())[1..].iter()
 	{
 		if arg.ends_with(suffix)
 		{
@@ -53,7 +51,7 @@ fn main()
 	}
 }
 
-fn compress(src: &Path, dst: &Path) -> IoResult<()>
+fn compress(src: &Path, dst: &Path) -> Result<()>
 {
 	println!("Compressing: {:?} -> {:?}", src, dst);
 	let mut fi = try!(File::open(src));
@@ -64,25 +62,20 @@ fn compress(src: &Path, dst: &Path) -> IoResult<()>
 	}
 }
 
-fn decompress(src: &Path, dst: &Path) -> IoResult<()>
+fn decompress(src: &Path, dst: &Path) -> Result<()>
 {
 	println!("Decompressing: {:?} -> {:?}", src, dst);
-	let mut fi = try!(lz4::Decoder::new(File::open(src)));
+	let mut fi = try!(lz4::Decoder::new(try!(File::open(src))));
 	let mut fo = try!(File::create(dst));
 	copy(&mut fi, &mut fo)
 }
 
-fn copy(src: &mut Reader, dst: &mut Writer) -> IoResult<()>
+fn copy(src: &mut Read, dst: &mut Write) -> Result<()>
 {
 	let mut buffer: [u8; 1024] = [0; 1024];
 	loop
 	{
-		let len = match src.read(&mut buffer)
-		{
-			Ok(len) => len,
-			Err(ref e) if e.kind == IoErrorKind::EndOfFile => 0,
-			Err(e) => return Err(e)
-		};
+		let len = try! (src.read(&mut buffer));
 		if len == 0
 		{
 			break;
