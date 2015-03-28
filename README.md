@@ -1,7 +1,7 @@
 lz4
 ====
 
-This repository contains binding for lz4 compression library (https://code.google.com/p/lz4/).
+This repository contains binding for lz4 compression library (https://github.com/Cyan4973/lz4).
 
 LZ4 is a very fast lossless compression algorithm, providing compression speed at 400 MB/s per core, with near-linear scalability for multi-threaded applications. It also features an extremely fast decoder, with speed in multiple GB/s per core, typically reaching RAM speed limits on multi-core systems.
 
