@@ -1,5 +1,7 @@
 extern crate libc;
 
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::str;
@@ -18,6 +20,25 @@ pub type LZ4FCompressionContext = *mut c_void;
 pub type LZ4FDecompressionContext = *mut c_void;
 
 pub type LZ4FErrorCode = size_t;
+
+#[derive(Debug)]
+pub struct LZ4Error (String);
+
+impl Display for LZ4Error {
+	fn fmt(&self, formatter: &mut Formatter) -> Result<(), ::std::fmt::Error> {
+		formatter.write_str(&self.0)
+	}
+}
+
+impl ::std::error::Error for LZ4Error {
+	fn description(&self) -> &str {
+		&self.0
+	}
+
+	fn cause(&self) -> Option<&::std::error::Error> {
+		None
+	}
+}
 
 #[repr(u32)]
 pub enum BlockSizeId{
@@ -252,7 +273,7 @@ pub fn check_error(code: LZ4FErrorCode) -> Result<usize, Error>
 		if LZ4F_isError(code) != 0
 		{
 			let error_name = LZ4F_getErrorName(code);
-			return Err(Error::new(ErrorKind::Other, "LZ4 error", Some(str::from_utf8(CStr::from_ptr(error_name).to_bytes()).unwrap().to_string())));
+			return Err(Error::new(ErrorKind::Other, LZ4Error(str::from_utf8(CStr::from_ptr(error_name).to_bytes()).unwrap().to_string())));
 		}
 	}
 	Ok(code as usize)

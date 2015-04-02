@@ -1,4 +1,3 @@
-#![feature(io)]
 #![feature(libc)]
 
 pub mod liblz4;
