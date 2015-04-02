@@ -26,7 +26,7 @@ pub struct LZ4Error (String);
 
 impl Display for LZ4Error {
 	fn fmt(&self, formatter: &mut Formatter) -> Result<(), ::std::fmt::Error> {
-		formatter.write_str(&self.0)
+		formatter.debug_tuple("LZ4 error").field(&self.0).finish()
 	}
 }
 
