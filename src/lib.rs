@@ -1,5 +1,4 @@
 #![feature(libc)]
-#![feature(debug_builders)]
 
 pub mod liblz4;
 pub mod decoder;

@@ -25,8 +25,8 @@ pub type LZ4FErrorCode = size_t;
 pub struct LZ4Error (String);
 
 impl Display for LZ4Error {
-	fn fmt(&self, formatter: &mut Formatter) -> Result<(), ::std::fmt::Error> {
-		formatter.debug_tuple("LZ4 error").field(&self.0).finish()
+	fn fmt(&self, f: &mut Formatter) -> Result<(), ::std::fmt::Error> {
+		write!(f, "LZ4 error: {}", &self.0)
 	}
 }
 
