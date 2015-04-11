@@ -7,6 +7,10 @@ build = "src/build.rs"
 description = "Rust LZ4 bindins library."
 repository = "https://github.com/bozaro/lz4-rs"
 
+[[bin]]
+name = "lz4"
+test = false
+
 [dependencies]
 libc = "*"
 
