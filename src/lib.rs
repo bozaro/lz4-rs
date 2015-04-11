@@ -1,5 +1,3 @@
-#![feature(libc)]
-
 pub mod liblz4;
 pub mod decoder;
 pub mod encoder;

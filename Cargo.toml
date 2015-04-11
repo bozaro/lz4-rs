@@ -1,11 +1,14 @@
 [package]
 name = "lz4"
 license = "MIT"
-version = "1.3.127"
+version = "1.4.127"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "src/build.rs"
 description = "Rust LZ4 bindins library."
 repository = "https://github.com/bozaro/lz4-rs"
+
+[dependencies]
+libc = "*"
 
 [build-dependencies]
 gcc = "*"
