@@ -92,22 +92,53 @@ impl Drop for DecoderContext {
 	}
 }
 
-#[test]
-fn test_decoder_smoke() {
-	use super::encoder::*;
-	use std::io::Cursor;
-	use std::io::Read;
-	use std::io::Write;
+#[cfg(test)]
+mod test {
+	use std::io::{Cursor, Read, Write};
+	use super::super::encoder::Encoder;
+	use super::Decoder;
 
-	let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
-	let expected = b"Some data";
-	encoder.write(expected).unwrap();
-	let (buffer, result) = encoder.finish();
-	result.unwrap();
+	const BUFFER_SIZE: usize = 64 * 1024;
 
-	let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
-	let mut actual = [0; BUFFER_SIZE];
-	
-	let size = decoder.read(&mut actual).unwrap();
-	assert_eq!(expected, &actual[0..size]);
+	#[test]
+	fn test_decoder_smoke() {
+		let mut encoder = Encoder::new(Vec::new(), 1).unwrap();
+		let expected = b"Some data";
+		encoder.write(&expected[..4]).unwrap();
+		encoder.write(&expected[4..]).unwrap();
+		let (buffer, result) = encoder.finish();
+		result.unwrap();
+
+		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
+		let mut actual = [0; BUFFER_SIZE];
+		
+		let size = decoder.read(&mut actual).unwrap();
+		assert_eq!(expected, &actual[0..size]);
+	}
+
+	#[test]
+	fn test_decoder_random() {
+		let mut encoder = Encoder::new(Vec::new(), 1).unwrap();
+		let mut expected = Vec::new();
+		let mut rnd: u32 = 42;
+		for _ in 0..1027 * 1023 * 7 {
+			expected.push((rnd & 0xFF) as u8);
+			rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
+		}
+		encoder.write(&expected).unwrap();
+		let (encoded, result) = encoder.finish();
+		result.unwrap();
+
+		let mut decoder = Decoder::new(Cursor::new(encoded)).unwrap();
+		let mut actual = Vec::new();
+		loop {
+			let mut buffer = [0; BUFFER_SIZE];
+			let size = decoder.read(&mut buffer).unwrap();
+			if size == 0 {
+				break;
+			}
+			actual.write(&buffer[0..size]).unwrap();
+		}
+		assert_eq!(expected, actual);
+	}
 }

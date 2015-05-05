@@ -39,7 +39,6 @@ impl<W: Write> Encoder<W> {
 			c: try! (EncoderContext::new()),
 			buf: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(BUFFER_SIZE as size_t, &preferences)})))
 		};
-		println!("BUF: {}", encoder.buf.len());
 		try! (encoder.write_header(&preferences));
 		Ok (encoder)
 	}
@@ -133,15 +132,16 @@ mod test {
 
 	#[test]
 	fn test_encoder_smoke() {
-		let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
-		encoder.write(b"Some data").unwrap();
+		let mut encoder = Encoder::new(Vec::new(), 1).unwrap();
+		encoder.write(b"Some ").unwrap();
+		encoder.write(b"data").unwrap();
 		let (_, result) = encoder.finish();
 		result.unwrap();
 	}
 
 	#[test]
 	fn test_encoder_random() {
-		let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
+		let mut encoder = Encoder::new(Vec::new(), 1).unwrap();
 		let mut buffer = Vec::new();
 		let mut rnd: u32 = 42;
 		for _ in 0..1024 * 1024 {
