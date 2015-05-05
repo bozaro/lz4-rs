@@ -39,6 +39,7 @@ impl<W: Write> Encoder<W> {
 			c: try! (EncoderContext::new()),
 			buf: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(BUFFER_SIZE as size_t, &preferences)})))
 		};
+		println!("BUF: {}", encoder.buf.len());
 		try! (encoder.write_header(&preferences));
 		Ok (encoder)
 	}
@@ -125,10 +126,30 @@ impl Drop for EncoderContext {
 	}
 }
 
-#[test]
-fn test_encoder_smoke() {
-	let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
-	encoder.write(b"Some data").unwrap();
-	let (_, result) = encoder.finish();
-	result.unwrap();
+#[cfg(test)]
+mod test {
+	use std::io::Write;
+	use super::Encoder;
+
+	#[test]
+	fn test_encoder_smoke() {
+		let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
+		encoder.write(b"Some data").unwrap();
+		let (_, result) = encoder.finish();
+		result.unwrap();
+	}
+
+	#[test]
+	fn test_encoder_random() {
+		let mut encoder = Encoder::new(Vec::new(), 0).unwrap();
+		let mut buffer = Vec::new();
+		let mut rnd: u32 = 42;
+		for _ in 0..1024 * 1024 {
+			buffer.push((rnd & 0xFF) as u8);
+			rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
+		}
+		encoder.write(&buffer).unwrap();
+		let (_, result) = encoder.finish();
+		result.unwrap();
+	}
 }
