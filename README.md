@@ -1,6 +1,8 @@
 lz4
 ====
 
+[![Join the chat at https://gitter.im/bozaro/lz4-rs](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/bozaro/lz4-rs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This repository contains binding for lz4 compression library (https://github.com/Cyan4973/lz4).
 
 LZ4 is a very fast lossless compression algorithm, providing compression speed at 400 MB/s per core, with near-linear scalability for multi-threaded applications. It also features an extremely fast decoder, with speed in multiple GB/s per core, typically reaching RAM speed limits on multi-core systems.
