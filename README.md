@@ -8,6 +8,8 @@ LZ4 is a very fast lossless compression algorithm, providing compression speed a
 [![Build Status](https://travis-ci.org/bozaro/lz4-rs.svg?branch=master)](https://travis-ci.org/bozaro/lz4-rs)
 [![Crates.io](https://img.shields.io/crates/v/lz4.svg)](https://crates.io/crates/lz4)
 
+Rustdoc: https://bozaro.github.io/lz4-rs/lz4/
+
 ## Usage
 
 Put this in your `Cargo.toml`:

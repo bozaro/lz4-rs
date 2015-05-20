@@ -6,10 +6,12 @@ authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "src/build.rs"
 description = "Rust LZ4 bindins library."
 repository = "https://github.com/bozaro/lz4-rs"
+documentation = "https://bozaro.github.io/lz4-rs/lz4/"
 
 [[bin]]
 name = "lz4"
 test = false
+doc = false
 
 [dependencies]
 libc = "*"
