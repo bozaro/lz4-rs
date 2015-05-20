@@ -6,6 +6,7 @@ This repository contains binding for lz4 compression library (https://github.com
 LZ4 is a very fast lossless compression algorithm, providing compression speed at 400 MB/s per core, with near-linear scalability for multi-threaded applications. It also features an extremely fast decoder, with speed in multiple GB/s per core, typically reaching RAM speed limits on multi-core systems.
 
 [![Build Status](https://travis-ci.org/bozaro/lz4-rs.svg?branch=master)](https://travis-ci.org/bozaro/lz4-rs)
+[![Crates.io](https://img.shields.io/crates/v/lz4.svg)](https://crates.io/crates/lz4)
 
 ## Usage
 
