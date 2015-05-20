@@ -4,60 +4,109 @@ use std::cmp;
 use std::ptr;
 use super::liblz4::*;
 
-const BUFFER_SIZE: usize = 32 * 1024;
-
 struct EncoderContext {
 	c: LZ4FCompressionContext,
+}
+
+#[derive(Clone)]
+pub struct EncoderParams {
+	block_size: BlockSize,
+	block_mode: BlockMode,
+	checksum: ContentChecksum,
+	// 0 == default (fast mode); values above 16 count as 16; values below 0 count as 0
+	level: u32,
+	// 1 == always flush (reduce need for tmp buffer)
+	auto_flush: bool,
 }
 
 pub struct Encoder<W> {
 	c: EncoderContext,
 	w: W,
-	buf: Vec<u8>
+	limit: usize,
+	buffer: Vec<u8>
 }
 
-impl<W: Write> Encoder<W> {
-	/// Creates a new encoder which will have its output written to the given
-	/// output stream. The output stream can be re-acquired by calling
-	/// `finish()`
-	pub fn new(w: W, compression_level: u32) -> Result<Encoder<W>> {
+impl EncoderParams {
+	pub fn new() -> Self {
+		EncoderParams {
+			block_size: BlockSize::Default,
+			block_mode: BlockMode::Linked,
+			checksum: ContentChecksum::ChecksumEnabled,
+			level: 0,
+			auto_flush: false,
+		}
+	}
+
+	pub fn block_size(&mut self, block_size: BlockSize) -> &mut Self {
+		self.block_size = block_size;
+		self
+	}
+
+	pub fn block_mode(&mut self, block_mode: BlockMode) -> &mut Self {
+		self.block_mode = block_mode;
+		self
+	}
+
+	pub fn checksum(&mut self, checksum: ContentChecksum) -> &mut Self {
+		self.checksum = checksum;
+		self
+	}
+
+	pub fn level(&mut self, level: u32) -> &mut Self {
+		self.level = level;
+		self
+	}
+
+	pub fn auto_flush(&mut self, auto_flush: bool) -> &mut Self {
+		self.auto_flush = auto_flush;
+		self
+	}
+
+	pub fn build<W: Write>(&self, w: W) -> Result<Encoder<W>> {
+		let block_size = self.block_size.get_size();
 		let preferences = LZ4FPreferences
 		{
 			frame_info: LZ4FFrameInfo
 			{
-				block_size_id: BlockSizeId::Default,
-				block_mode: BlockMode::Linked,
-				content_checksum_flag: ContentChecksum::ContentChecksumEnabled,
+				block_size_id: self.block_size.clone(),
+				block_mode: self.block_mode.clone(),
+				content_checksum_flag: self.checksum.clone(),
 				reserved: [0; 5],
 			},
-			compression_level: compression_level,
-			auto_flush: 0,
+			compression_level: self.level,
+			auto_flush: match self.auto_flush {
+				false => 0,
+				true => 1,
+			},
 			reserved: [0; 4],
 		};
 		let mut encoder = Encoder {
 			w: w,
 			c: try! (EncoderContext::new()),
-			buf: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(BUFFER_SIZE as size_t, &preferences)})))
+			limit: block_size,
+			buffer: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(block_size as size_t, &preferences)})))
 		};
 		try! (encoder.write_header(&preferences));
 		Ok (encoder)
 	}
-	
+}
+
+impl<W: Write> Encoder<W> {
 	fn write_header(&mut self, preferences: &LZ4FPreferences) -> Result<()>
 	{
 		unsafe {
-			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, preferences)));
-			self.buf.set_len(len);
+			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, preferences)));
+			self.buffer.set_len(len);
 		}
-		self.w.write_all(&self.buf)
+		self.w.write_all(&self.buffer)
 	}
 
 	fn write_end(&mut self) -> Result<()> {
 		unsafe {
-			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, ptr::null())));
-			self.buf.set_len(len);
+			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, ptr::null())));
+			self.buffer.set_len(len);
 		};
-		self.w.write_all(&self.buf)
+		self.w.write_all(&self.buffer)
 	}
 
 	/// This function is used to flag that this session of compression is done
@@ -70,34 +119,34 @@ impl<W: Write> Encoder<W> {
 }
 
 impl<W: Write> Write for Encoder<W> {
-	fn write(&mut self, buf: &[u8]) -> Result<usize> {
+	fn write(&mut self, buffer: &[u8]) -> Result<usize> {
 		let mut offset = 0;
-		while offset < buf.len()
+		while offset < buffer.len()
 		{
-			let size = cmp::min(buf.len() - offset, BUFFER_SIZE);
+			let size = cmp::min(buffer.len() - offset, self.limit);
 			unsafe {
-				let len = try! (check_error(LZ4F_compressUpdate(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, buf[offset..].as_ptr(), size as size_t, ptr::null())));
-				self.buf.set_len(len);
-				try! (self.w.write_all(&self.buf));
+				let len = try! (check_error(LZ4F_compressUpdate(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, buffer[offset..].as_ptr(), size as size_t, ptr::null())));
+				self.buffer.set_len(len);
+				try! (self.w.write_all(&self.buffer));
 			}
 			offset += size;
 			
 		}
-		Ok(buf.len())
+		Ok(buffer.len())
 	}
     
 	fn flush(&mut self) -> Result<()> {
 		loop
 		{
 			unsafe {
-				let len = try! (check_error(LZ4F_flush(self.c.c, self.buf.as_mut_ptr(), self.buf.capacity() as size_t, ptr::null())));
+				let len = try! (check_error(LZ4F_flush(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, ptr::null())));
 				if len == 0
 				{
 					break;
 				}
-				self.buf.set_len(len);
+				self.buffer.set_len(len);
 			};
-			try! (self.w.write_all(&self.buf));
+			try! (self.w.write_all(&self.buffer));
 		}
 		self.w.flush()
 	}
@@ -128,11 +177,11 @@ impl Drop for EncoderContext {
 #[cfg(test)]
 mod test {
 	use std::io::Write;
-	use super::Encoder;
+	use super::EncoderParams;
 
 	#[test]
 	fn test_encoder_smoke() {
-		let mut encoder = Encoder::new(Vec::new(), 1).unwrap();
+		let mut encoder = EncoderParams::new().level(1).build(Vec::new()).unwrap();
 		encoder.write(b"Some ").unwrap();
 		encoder.write(b"data").unwrap();
 		let (_, result) = encoder.finish();
@@ -141,7 +190,7 @@ mod test {
 
 	#[test]
 	fn test_encoder_random() {
-		let mut encoder = Encoder::new(Vec::new(), 1).unwrap();
+		let mut encoder = EncoderParams::new().level(1).build(Vec::new()).unwrap();
 		let mut buffer = Vec::new();
 		let mut rnd: u32 = 42;
 		for _ in 0..1024 * 1024 {

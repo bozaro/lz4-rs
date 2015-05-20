@@ -4,4 +4,5 @@ pub mod encoder;
 
 pub use decoder::*;
 pub use encoder::*;
+pub use liblz4::{BlockSize, BlockMode, ContentChecksum};
 pub use liblz4::version;

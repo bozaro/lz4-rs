@@ -40,15 +40,28 @@ impl ::std::error::Error for LZ4Error {
 	}
 }
 
+#[derive(Clone)]
 #[repr(u32)]
-pub enum BlockSizeId{
-	Default = 0,
+pub enum BlockSize {
+	Default = 0, // Default - 64KB
 	Max64KB = 4,
 	Max256KB = 5,
 	Max1MB = 6,
 	Max4MB = 7,
 }
 
+impl BlockSize {
+	pub fn get_size(&self) -> usize {
+		match self {
+			&BlockSize::Default | &BlockSize::Max64KB => 64 * 1024,
+			&BlockSize::Max256KB => 256 * 1024,
+			&BlockSize::Max1MB => 1 * 1024 * 1024,
+			&BlockSize::Max4MB => 4 * 1024 * 1024,
+		}
+	}
+}
+
+#[derive(Clone)]
 #[repr(u32)]
 pub enum BlockMode
 {
@@ -56,17 +69,18 @@ pub enum BlockMode
 	Independent,
 }
 
+#[derive(Clone)]
 #[repr(u32)]
 pub enum ContentChecksum
 {
-	NoContentChecksum = 0,
-	ContentChecksumEnabled,
+	NoChecksum = 0,
+	ChecksumEnabled,
 }
 
 #[repr(C)]
 pub struct LZ4FFrameInfo
 {
-  pub block_size_id: BlockSizeId,
+  pub block_size_id: BlockSize,
   pub block_mode: BlockMode,
   pub content_checksum_flag: ContentChecksum,
   pub reserved: [c_uint; 5],
