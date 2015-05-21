@@ -29,7 +29,7 @@ fn compress(src: &Path, dst: &Path) -> Result<()>
 {
 	println!("Compressing: {:?} -> {:?}", src, dst);
 	let mut fi = try!(File::open(src));
-	let mut fo = try!(lz4::EncoderParams::new().build(try!(File::create(dst))));
+	let mut fo = try!(lz4::EncoderBuilder::new().build(try!(File::create(dst))));
 	try!(copy(&mut fi, &mut fo));
 	match fo.finish() {
 		(_, result) => result

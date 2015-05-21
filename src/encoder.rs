@@ -13,7 +13,7 @@ struct EncoderContext {
 }
 
 #[derive(Clone)]
-pub struct EncoderParams {
+pub struct EncoderBuilder {
 	block_size: BlockSize,
 	block_mode: BlockMode,
 	checksum: ContentChecksum,
@@ -30,9 +30,9 @@ pub struct Encoder<W> {
 	buffer: Vec<u8>
 }
 
-impl EncoderParams {
+impl EncoderBuilder {
 	pub fn new() -> Self {
-		EncoderParams {
+		EncoderBuilder {
 			block_size: BlockSize::Default,
 			block_mode: BlockMode::Linked,
 			checksum: ContentChecksum::ChecksumEnabled,
@@ -181,11 +181,11 @@ impl Drop for EncoderContext {
 #[cfg(test)]
 mod test {
 	use std::io::Write;
-	use super::EncoderParams;
+	use super::EncoderBuilder;
 
 	#[test]
 	fn test_encoder_smoke() {
-		let mut encoder = EncoderParams::new().level(1).build(Vec::new()).unwrap();
+		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
 		encoder.write(b"Some ").unwrap();
 		encoder.write(b"data").unwrap();
 		let (_, result) = encoder.finish();
@@ -194,7 +194,7 @@ mod test {
 
 	#[test]
 	fn test_encoder_random() {
-		let mut encoder = EncoderParams::new().level(1).build(Vec::new()).unwrap();
+		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
 		let mut buffer = Vec::new();
 		let mut rnd: u32 = 42;
 		for _ in 0..1024 * 1024 {

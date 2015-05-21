@@ -99,14 +99,14 @@ impl Drop for DecoderContext {
 #[cfg(test)]
 mod test {
 	use std::io::{Cursor, Read, Write};
-	use super::super::encoder::EncoderParams;
+	use super::super::encoder::EncoderBuilder;
 	use super::Decoder;
 
 	const BUFFER_SIZE: usize = 64 * 1024;
 
 	#[test]
 	fn test_decoder_smoke() {
-		let mut encoder = EncoderParams::new().level(1).build(Vec::new()).unwrap();
+		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
 		let expected = b"Some data";
 		encoder.write(&expected[..4]).unwrap();
 		encoder.write(&expected[4..]).unwrap();
@@ -122,7 +122,7 @@ mod test {
 
 	#[test]
 	fn test_decoder_random() {
-		let mut encoder = EncoderParams::new().level(1).build(Vec::new()).unwrap();
+		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
 		let mut expected = Vec::new();
 		let mut rnd: u32 = 42;
 		for _ in 0..1027 * 1023 * 7 {
