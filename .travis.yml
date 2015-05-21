@@ -1,3 +1,16 @@
 language: rust
-
 sudo: false
+script:
+- cargo build --verbose
+- cargo test --verbose
+- cargo doc
+after_success: |
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  echo '<meta http-equiv=refresh content=0;url=filetime/index.html>' > target/doc/index.html &&
+  pip install ghp-import --user $USER &&
+  $HOME/.local/bin/ghp-import -n target/doc &&
+  git push -qf https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+env:
+  global:
+    secure: NnvtMt3pzBU16hVKt+H3YRXBLCSD1E46U/dLqWU5ryGA3plNIgJWW37/7WzLDi3VB9oOJFRQ7F0FASS3SMk9S2XnJt+BKZCNcZ2Y+ZAMlzzCw2LBDJKqE9CxIg9i+yn7usQNJ1ck42O/S8vsY7bOWNspFaQKImnFjX80P9Gc8EE=
