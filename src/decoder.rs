@@ -1,7 +1,11 @@
+extern crate libc;
+
 use std::io::Read;
 use std::io::Result;
 use std::ptr;
 use super::liblz4::*;
+
+use self::libc::size_t;
 
 const BUFFER_SIZE: usize = 32 * 1024;
 

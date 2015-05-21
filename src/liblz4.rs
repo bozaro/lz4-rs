@@ -7,10 +7,9 @@ use std::io::ErrorKind;
 use std::str;
 use std::ffi::CStr;
 
-pub use self::libc::{
+use self::libc::{
 	c_void,
 	c_char,
-	c_int,
 	c_uint,
 	size_t,
 };
