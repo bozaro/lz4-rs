@@ -4,7 +4,7 @@ license = "MIT"
 version = "1.7.129"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "src/build.rs"
-description = "Rust LZ4 bindins library."
+description = "Rust LZ4 bindings library."
 repository = "https://github.com/bozaro/lz4-rs"
 documentation = "https://bozaro.github.io/lz4-rs/lz4/"
 
