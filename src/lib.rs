@@ -1,4 +1,4 @@
-mod liblz4;
+pub mod liblz4;
 mod decoder;
 mod encoder;
 
