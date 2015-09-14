@@ -66,7 +66,7 @@ impl<R: Read> Read for Decoder<R> {
 				dst_offset += dst_size as usize;
 				if len == 0 {
 					self.eof = true;
-					break;
+					return Ok(dst_offset);
 				}
 			}
 		}
