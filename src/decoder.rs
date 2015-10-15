@@ -41,12 +41,12 @@ impl<R: Read> Decoder<R> {
 impl<R: Read> Read for Decoder<R> {
 	fn read(&mut self, buf: &mut [u8]) -> Result<usize>
 	{
-		if self.eof
+		if self.eof || buf.len() == 0
 		{
 			return Ok(0);
 		}
 		let mut dst_offset: usize = 0;
-		while dst_offset < buf.len()
+		while dst_offset == 0
 		{
 			if self.pos >= self.len
 			{
