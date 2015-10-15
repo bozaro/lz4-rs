@@ -1,3 +1,7 @@
+1.9.131:
+
+ * Do not wait for fill whole buffer on read. It's usefull for read network stream (thanks to Brian Vincent)
+
 1.8.131:
 
  * Update lz4 to v131
