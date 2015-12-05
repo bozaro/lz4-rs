@@ -1,6 +1,11 @@
-1.10.131:
+1.11.131:
 
  * Add missing method Decoder::finish for unwrapping original Read stream
+
+1.10.131:
+
+ * Fix conflicting import on Rust nightly (thanks to maximelenoir)
+ * Don't export the modules in the public API (thanks to Corey "See More" Richardson)
 
 1.9.131:
 
