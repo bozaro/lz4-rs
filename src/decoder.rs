@@ -1,5 +1,4 @@
-use std::io::Read;
-use std::io::Result;
+use std::io::{Error, ErrorKind, Read, Result};
 use std::ptr;
 use super::liblz4::*;
 use liblz4::libc::size_t;
@@ -16,7 +15,7 @@ pub struct Decoder<R> {
 	buf: [u8; BUFFER_SIZE],
 	pos: usize,
 	len: usize,
-	eof: bool,
+	next: usize,
 }
 
 impl<R: Read> Decoder<R> {
@@ -30,7 +29,14 @@ impl<R: Read> Decoder<R> {
 			buf: [0; BUFFER_SIZE],
 			pos: BUFFER_SIZE,
 			len: BUFFER_SIZE,
-			eof: false,
+			next: 15, // Minimal LZ4 stream size
+		})
+	}
+
+	pub fn finish(self) -> (R, Result<()>) {
+		(self.r, match self.next {
+			0 => Ok(()),
+			_ => Err(Error::new(ErrorKind::Interrupted, "Finish runned before read end of compressed stream")),
 		})
 	}
 }
@@ -38,7 +44,7 @@ impl<R: Read> Decoder<R> {
 impl<R: Read> Read for Decoder<R> {
 	fn read(&mut self, buf: &mut [u8]) -> Result<usize>
 	{
-		if self.eof || buf.len() == 0
+		if self.next == 0 || buf.len() == 0
 		{
 			return Ok(0);
 		}
@@ -48,11 +54,16 @@ impl<R: Read> Read for Decoder<R> {
 			if self.pos >= self.len
 			{
 				self.pos = 0;
-				self.len = try! (self.r.read(&mut self.buf));
+				let need = match self.buf.len() < self.next {
+					true => self.buf.len(),
+					false => self.next,
+				};
+				self.len = try! (self.r.read(&mut self.buf[0..need]));
 				if self.len <= 0
 				{
 					break;
 				}
+				self.next -= self.len;
 			}
 			while (dst_offset < buf.len()) && (self.pos < self.len)
 			{
@@ -62,8 +73,10 @@ impl<R: Read> Read for Decoder<R> {
 				self.pos += src_size as usize;
 				dst_offset += dst_size as usize;
 				if len == 0 {
-					self.eof = true;
+					self.next = 0;
 					return Ok(dst_offset);
+				} else if self.next < len {
+					self.next = len;
 				}
 			}
 		}
@@ -96,10 +109,42 @@ impl Drop for DecoderContext {
 #[cfg(test)]
 mod test {
 	use std::io::{Cursor, Read, Write};
-	use super::super::encoder::EncoderBuilder;
+	use super::super::encoder::{Encoder, EncoderBuilder};
 	use super::Decoder;
 
 	const BUFFER_SIZE: usize = 64 * 1024;
+	const END_MARK: [u8; 4] = [0x9f, 0x77, 0x22, 0x71];
+
+	fn finish_encode<W: Write>(encoder: Encoder<W>) -> W {
+		let (mut buffer, result) = encoder.finish();
+		result.unwrap();
+		buffer.write(&END_MARK).unwrap();
+		buffer
+	}
+
+	fn finish_decode<R: Read>(decoder: Decoder<R>) {
+		let (mut buffer, result) = decoder.finish();
+		result.unwrap();
+
+		let mut mark = Vec::new();
+		let mut data = Vec::new();
+		mark.write(&END_MARK).unwrap();
+		buffer.read_to_end(&mut data).unwrap();
+		assert_eq!(mark, data);
+	}
+
+	#[test]
+	fn test_decoder_empty() {
+		let expected: Vec<u8> = Vec::new();
+		let buffer = finish_encode(EncoderBuilder::new().level(1).build(Vec::new()).unwrap());
+
+		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
+		let mut actual = Vec::new();
+		
+		decoder.read_to_end(&mut actual).unwrap();
+		assert_eq!(expected, actual);
+		finish_decode(decoder);
+	}
 
 	#[test]
 	fn test_decoder_smoke() {
@@ -108,14 +153,14 @@ mod test {
 		expected.write(b"Some data").unwrap();
 		encoder.write(&expected[..4]).unwrap();
 		encoder.write(&expected[4..]).unwrap();
-		let (buffer, result) = encoder.finish();
-		result.unwrap();
+		let buffer = finish_encode(encoder);
 
 		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
 		let mut actual = Vec::new();
 		
 		decoder.read_to_end(&mut actual).unwrap();
 		assert_eq!(expected, actual);
+		finish_decode(decoder);
 	}
 
 	#[test]
@@ -128,8 +173,7 @@ mod test {
 			rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
 		}
 		encoder.write(&expected).unwrap();
-		let (encoded, result) = encoder.finish();
-		result.unwrap();
+		let encoded = finish_encode(encoder);
 
 		let mut decoder = Decoder::new(Cursor::new(encoded)).unwrap();
 		let mut actual = Vec::new();
@@ -142,5 +186,6 @@ mod test {
 			actual.write(&buffer[0..size]).unwrap();
 		}
 		assert_eq!(expected, actual);
+		finish_decode(decoder);
 	}
 }

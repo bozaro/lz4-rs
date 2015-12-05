@@ -1,3 +1,7 @@
+1.10.131:
+
+ * Add missing method Decoder::finish for unwrapping original Read stream
+
 1.9.131:
 
  * Do not wait for fill whole buffer on read. It's usefull for read network stream (thanks to Brian Vincent)
