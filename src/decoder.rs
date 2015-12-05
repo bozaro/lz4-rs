@@ -104,17 +104,18 @@ mod test {
 	#[test]
 	fn test_decoder_smoke() {
 		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
-		let expected = b"Some data";
+		let mut expected = Vec::new();
+		expected.write(b"Some data").unwrap();
 		encoder.write(&expected[..4]).unwrap();
 		encoder.write(&expected[4..]).unwrap();
 		let (buffer, result) = encoder.finish();
 		result.unwrap();
 
 		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
-		let mut actual = [0; BUFFER_SIZE];
+		let mut actual = Vec::new();
 		
-		let size = decoder.read(&mut actual).unwrap();
-		assert_eq!(expected, &actual[0..size]);
+		decoder.read_to_end(&mut actual).unwrap();
+		assert_eq!(expected, actual);
 	}
 
 	#[test]
