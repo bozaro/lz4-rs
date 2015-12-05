@@ -109,10 +109,10 @@ pub struct LZ4FDecompressOptions
 }
 
 #[repr(C)]
-pub struct LZ4StreamEncode;
+pub struct LZ4StreamEncode(c_void);
 
 #[repr(C)]
-pub struct LZ4StreamDecode;
+pub struct LZ4StreamDecode(c_void);
 
 pub const LZ4F_VERSION: c_uint = 100;
 
