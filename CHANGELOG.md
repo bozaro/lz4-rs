@@ -1,3 +1,7 @@
+1.12.131:
+
+ * Fix pointer invalidation on Decoder move #8 (thanks to Maxime Lenoir)
+
 1.11.131:
 
  * Add missing method Decoder::finish for unwrapping original Read stream
