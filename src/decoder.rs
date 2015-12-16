@@ -12,7 +12,7 @@ struct DecoderContext {
 pub struct Decoder<R> {
 	c: DecoderContext,
 	r: R,
-	buf: [u8; BUFFER_SIZE],
+	buf: Box<[u8]>,
 	pos: usize,
 	len: usize,
 	next: usize,
@@ -26,7 +26,7 @@ impl<R: Read> Decoder<R> {
 		Ok (Decoder {
 			r: r,
 			c: try! (DecoderContext::new()),
-			buf: [0; BUFFER_SIZE],
+			buf: vec![0; BUFFER_SIZE].into_boxed_slice(),
 			pos: BUFFER_SIZE,
 			len: BUFFER_SIZE,
 			next: 15, // Minimal LZ4 stream size
