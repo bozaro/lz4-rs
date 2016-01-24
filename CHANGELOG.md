@@ -1,3 +1,7 @@
+1.13.131:
+
+ * Remove wildcard dependencies for rust 1.6
+
 1.12.131:
 
  * Fix pointer invalidation on Decoder move #8 (thanks to Maxime Lenoir)
