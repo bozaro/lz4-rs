@@ -1,7 +1,7 @@
 use std::io::{Error, ErrorKind, Read, Result};
 use std::ptr;
 use super::liblz4::*;
-use liblz4::libc::size_t;
+use libc::size_t;
 
 const BUFFER_SIZE: usize = 32 * 1024;
 

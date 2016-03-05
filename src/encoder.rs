@@ -3,7 +3,7 @@ use std::io::Result;
 use std::cmp;
 use std::ptr;
 use super::liblz4::*;
-use liblz4::libc::size_t;
+use libc::size_t;
 
 struct EncoderContext {
 	c: LZ4FCompressionContext,

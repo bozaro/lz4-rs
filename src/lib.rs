@@ -1,3 +1,5 @@
+extern crate libc;
+
 pub mod liblz4;
 mod decoder;
 mod encoder;
