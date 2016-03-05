@@ -1,3 +1,8 @@
+1.14.131:
+
+ * Modified build script to *always* compile the C code with -O3 optimization #11 (thanks to TQ Hirsch)
+ * Import libc crate in libc.rs to fix warnings on rust-nightly #10 (thanks to TQ Hirsch)
+
 1.13.131:
 
  * Remove wildcard dependencies for rust 1.6
