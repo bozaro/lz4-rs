@@ -1,5 +1,3 @@
-extern crate libc;
-
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;
@@ -7,7 +5,7 @@ use std::io::ErrorKind;
 use std::str;
 use std::ffi::CStr;
 
-use self::libc::{
+use libc::{
 	c_void,
 	c_char,
 	c_uint,
