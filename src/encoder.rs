@@ -145,7 +145,7 @@ impl<W: Write> Write for Encoder<W> {
 		}
 		Ok(buffer.len())
 	}
-    
+
 	fn flush(&mut self) -> Result<()> {
 		loop
 		{
@@ -218,13 +218,13 @@ mod test {
 	#[test]
 	fn test_encoder_written_size() {
 		let mut encoder = EncoderBuilder::new()
-                              .block_mode(BlockMode::Linked)
-                              .block_size(BlockSize::Max64KB)
-                              .checksum(ContentChecksum::NoChecksum)
-                              .level(1)
-                              .auto_flush(false)
-                              .build(Vec::new()).unwrap();
-        assert_eq!(encoder.get_written_size(), 7);
+							  .block_mode(BlockMode::Linked)
+							  .block_size(BlockSize::Max64KB)
+							  .checksum(ContentChecksum::NoChecksum)
+							  .level(1)
+							  .auto_flush(false)
+							  .build(Vec::new()).unwrap();
+		assert_eq!(encoder.get_written_size(), 7);
 		encoder.write(b"Some data").unwrap();
 		assert_eq!(encoder.get_written_size(), 7);
 		encoder.flush().unwrap();
