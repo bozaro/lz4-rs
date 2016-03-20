@@ -24,7 +24,8 @@ pub struct Encoder<W> {
 	c: EncoderContext,
 	w: W,
 	limit: usize,
-	buffer: Vec<u8>
+	buffer: Vec<u8>,
+	written_size: usize
 }
 
 impl EncoderBuilder {
@@ -85,7 +86,8 @@ impl EncoderBuilder {
 			w: w,
 			c: try! (EncoderContext::new()),
 			limit: block_size,
-			buffer: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(block_size as size_t, &preferences)})))
+			buffer: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(block_size as size_t, &preferences)}))),
+			written_size: 0
 		};
 		try! (encoder.write_header(&preferences));
 		Ok (encoder)
@@ -98,6 +100,7 @@ impl<W: Write> Encoder<W> {
 		unsafe {
 			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, preferences)));
 			self.buffer.set_len(len);
+			self.written_size += len;
 		}
 		self.w.write_all(&self.buffer)
 	}
@@ -106,8 +109,14 @@ impl<W: Write> Encoder<W> {
 		unsafe {
 			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, ptr::null())));
 			self.buffer.set_len(len);
+			// no need to update self.written_size as the encoder is about to be moved
 		};
 		self.w.write_all(&self.buffer)
+	}
+
+	/// This function returns the number of bytes written to the writer at this point in time. 
+	pub fn get_written_size(&self) -> usize {
+		self.written_size
 	}
 
 	/// This function is used to flag that this session of compression is done
@@ -129,6 +138,7 @@ impl<W: Write> Write for Encoder<W> {
 				let len = try! (check_error(LZ4F_compressUpdate(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, buffer[offset..].as_ptr(), size as size_t, ptr::null())));
 				self.buffer.set_len(len);
 				try! (self.w.write_all(&self.buffer));
+				self.written_size += len;
 			}
 			offset += size;
 			
@@ -146,6 +156,7 @@ impl<W: Write> Write for Encoder<W> {
 					break;
 				}
 				self.buffer.set_len(len);
+				self.written_size += len;
 			};
 			try! (self.w.write_all(&self.buffer));
 		}
@@ -179,6 +190,7 @@ impl Drop for EncoderContext {
 mod test {
 	use std::io::Write;
 	use super::EncoderBuilder;
+	use super::super::liblz4::{BlockMode, BlockSize, ContentChecksum};
 
 	#[test]
 	fn test_encoder_smoke() {
@@ -199,6 +211,24 @@ mod test {
 			rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
 		}
 		encoder.write(&buffer).unwrap();
+		let (_, result) = encoder.finish();
+		result.unwrap();
+	}
+
+	#[test]
+	fn test_encoder_written_size() {
+		let mut encoder = EncoderBuilder::new()
+                              .block_mode(BlockMode::Linked)
+                              .block_size(BlockSize::Max64KB)
+                              .checksum(ContentChecksum::NoChecksum)
+                              .level(1)
+                              .auto_flush(false)
+                              .build(Vec::new()).unwrap();
+        assert_eq!(encoder.get_written_size(), 7);
+		encoder.write(b"Some data").unwrap();
+		assert_eq!(encoder.get_written_size(), 7);
+		encoder.flush().unwrap();
+		assert_eq!(encoder.get_written_size(), 20);
 		let (_, result) = encoder.finish();
 		result.unwrap();
 	}
