@@ -117,6 +117,11 @@ impl<W: Write> Encoder<W> {
 		self.w.write_all(&self.buffer)
 	}
 
+	/// Immutable writer reference.
+	pub fn writer(&self) -> &W {
+		&self.w
+	}
+
 	/// This function returns the number of bytes written to the writer at this point in time. 
 	pub fn get_written_size(&self) -> u64 {
 		self.written_size
@@ -188,65 +193,39 @@ impl Drop for EncoderContext {
 
 #[cfg(test)]
 mod test {
-	use std::io::{Error, Write};
-	use std::sync::Arc;
-	use std::sync::atomic::{AtomicUsize, Ordering};
-	use super::EncoderBuilder;
+	use std::io::Write;
+	use super::{Encoder, EncoderBuilder};
 
-	struct Wrapper<W: Write> {
-		w: W,
-		written_size: Arc<AtomicUsize>,
-	}
-
-	impl<W: Write> Wrapper<W> {
-		pub fn new(w: W, written_size: Arc<AtomicUsize>) -> Self {
-			Wrapper {
-				w: w,
-				written_size: written_size,
-			}
-		}
-	}
-
-	impl<W: Write> Write for Wrapper<W> {
-		fn write(&mut self, buffer: &[u8]) -> Result<usize, Error> {
-			self.written_size.fetch_add(buffer.len(), Ordering::Relaxed);
-			self.w.write(buffer)
-		}
-
-		fn flush(&mut self) -> Result<(), Error> {
-			self.w.flush()
-		}
+	fn check_len(encoder: &Encoder<Vec<u8>>) {
+		assert_eq!(encoder.writer().len() as u64, encoder.get_written_size());
 	}
 
 	#[test]
 	fn test_encoder_smoke() {
-		let written_size = Arc::new(AtomicUsize::new(0));
-		let wrapper = Wrapper::new(Vec::new(), written_size.clone());
-		let mut encoder = EncoderBuilder::new().level(1).build(wrapper).unwrap();
-		assert_eq!(written_size.load(Ordering::Relaxed) as u64, encoder.get_written_size());
+		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
+		check_len(&encoder);
 		encoder.write(b"Some ").unwrap();
-		assert_eq!(written_size.load(Ordering::Relaxed) as u64, encoder.get_written_size());
+		check_len(&encoder);
 		encoder.write(b"data").unwrap();
-		assert_eq!(written_size.load(Ordering::Relaxed) as u64, encoder.get_written_size());
+		check_len(&encoder);
 		let (_, result) = encoder.finish();
 		result.unwrap();
 	}
 
 	#[test]
 	fn test_encoder_random() {
-		let written_size = Arc::new(AtomicUsize::new(0));
-		let wrapper = Wrapper::new(Vec::new(), written_size.clone());
-		let mut encoder = EncoderBuilder::new().level(1).build(wrapper).unwrap();
+		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
 		let mut buffer = Vec::new();
 		let mut rnd: u32 = 42;
 		for _ in 0..1024 * 1024 {
 			buffer.push((rnd & 0xFF) as u8);
 			rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
 		}
-		assert_eq!(written_size.load(Ordering::Relaxed) as u64, encoder.get_written_size());
+		check_len(&encoder);
 		encoder.write(&buffer).unwrap();
-		assert_eq!(written_size.load(Ordering::Relaxed) as u64, encoder.get_written_size());
+		check_len(&encoder);
 		let (_, result) = encoder.finish();
 		result.unwrap();
 	}
 }
+ 
