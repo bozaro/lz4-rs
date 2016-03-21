@@ -35,6 +35,11 @@ impl<R: Read> Decoder<R> {
 		})
 	}
 
+	/// Immutable reader reference.
+	pub fn reader(&self) -> &R {
+		&self.r
+	}
+
 	/// This function returns the number of bytes readed from reader at this point in time. 
 	pub fn get_read_size(&self) -> u64 {
 		self.read_size
@@ -123,6 +128,10 @@ mod test {
 	const BUFFER_SIZE: usize = 64 * 1024;
 	const END_MARK: [u8; 4] = [0x9f, 0x77, 0x22, 0x71];
 
+	fn check_position(decoder: &Decoder<Cursor<Vec<u8>>>) {
+		assert_eq!(decoder.reader().position(), decoder.get_read_size());
+	}
+
 	fn finish_encode<W: Write>(encoder: Encoder<W>) -> W {
 		let (mut buffer, result) = encoder.finish();
 		result.unwrap();
@@ -148,8 +157,10 @@ mod test {
 
 		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
 		let mut actual = Vec::new();
-		
+		check_position(&decoder);
+
 		decoder.read_to_end(&mut actual).unwrap();
+		check_position(&decoder);
 		assert_eq!(expected, actual);
 		finish_decode(decoder);
 	}
@@ -165,8 +176,10 @@ mod test {
 
 		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
 		let mut actual = Vec::new();
+		check_position(&decoder);
 		
 		decoder.read_to_end(&mut actual).unwrap();
+		check_position(&decoder);
 		assert_eq!(expected, actual);
 		finish_decode(decoder);
 	}
@@ -185,9 +198,11 @@ mod test {
 
 		let mut decoder = Decoder::new(Cursor::new(encoded)).unwrap();
 		let mut actual = Vec::new();
+		check_position(&decoder);
 		loop {
 			let mut buffer = [0; BUFFER_SIZE];
 			let size = decoder.read(&mut buffer).unwrap();
+			check_position(&decoder);
 			if size == 0 {
 				break;
 			}
