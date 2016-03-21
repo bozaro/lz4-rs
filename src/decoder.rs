@@ -16,7 +16,7 @@ pub struct Decoder<R> {
 	pos: usize,
 	len: usize,
 	next: usize,
-	readed_size: u64,
+	read_size: u64,
 }
 
 impl<R: Read> Decoder<R> {
@@ -31,13 +31,13 @@ impl<R: Read> Decoder<R> {
 			pos: BUFFER_SIZE,
 			len: BUFFER_SIZE,
 			next: 15, // Minimal LZ4 stream size
-			readed_size: 0,
+			read_size: 0,
 		})
 	}
 
 	/// This function returns the number of bytes readed from reader at this point in time. 
-	pub fn get_readed_size(&self) -> u64 {
-		self.readed_size
+	pub fn get_read_size(&self) -> u64 {
+		self.read_size
 	}
 
 	pub fn finish(self) -> (R, Result<()>) {
@@ -70,7 +70,7 @@ impl<R: Read> Read for Decoder<R> {
 				{
 					break;
 				}
-				self.readed_size += self.len as u64;
+				self.read_size += self.len as u64;
 				self.next -= self.len;
 			}
 			while (dst_offset < buf.len()) && (self.pos < self.len)
