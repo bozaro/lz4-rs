@@ -110,6 +110,11 @@ impl<W: Write> Encoder<W> {
 		self.w.write_all(&self.buffer)
 	}
 
+	/// Immutable writer reference.
+	pub fn writer(&self) -> &W {
+		&self.w
+	}
+
 	/// This function is used to flag that this session of compression is done
 	/// with. The stream is finished up (final bytes are written), and then the
 	/// wrapped writer is returned.
@@ -203,3 +208,4 @@ mod test {
 		result.unwrap();
 	}
 }
+ 

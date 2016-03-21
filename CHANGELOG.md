@@ -1,3 +1,7 @@
+1.15.131:
+
+ * Add Encoder.writer() and Decoder.reader() methods (thanks to Paul Grandperrin)
+
 1.14.131:
 
  * Modified build script to *always* compile the C code with -O3 optimization #11 (thanks to TQ Hirsch)

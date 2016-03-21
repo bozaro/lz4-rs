@@ -33,6 +33,11 @@ impl<R: Read> Decoder<R> {
 		})
 	}
 
+	/// Immutable reader reference.
+	pub fn reader(&self) -> &R {
+		&self.r
+	}
+
 	pub fn finish(self) -> (R, Result<()>) {
 		(self.r, match self.next {
 			0 => Ok(()),
