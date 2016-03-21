@@ -16,6 +16,7 @@ pub struct Decoder<R> {
 	pos: usize,
 	len: usize,
 	next: usize,
+	read_size: u64,
 }
 
 impl<R: Read> Decoder<R> {
@@ -30,7 +31,18 @@ impl<R: Read> Decoder<R> {
 			pos: BUFFER_SIZE,
 			len: BUFFER_SIZE,
 			next: 15, // Minimal LZ4 stream size
+			read_size: 0,
 		})
+	}
+
+	/// Immutable reader reference.
+	pub fn reader(&self) -> &R {
+		&self.r
+	}
+
+	/// This function returns the number of bytes readed from reader at this point in time. 
+	pub fn get_read_size(&self) -> u64 {
+		self.read_size
 	}
 
 	pub fn finish(self) -> (R, Result<()>) {
@@ -63,6 +75,7 @@ impl<R: Read> Read for Decoder<R> {
 				{
 					break;
 				}
+				self.read_size += self.len as u64;
 				self.next -= self.len;
 			}
 			while (dst_offset < buf.len()) && (self.pos < self.len)
@@ -115,6 +128,10 @@ mod test {
 	const BUFFER_SIZE: usize = 64 * 1024;
 	const END_MARK: [u8; 4] = [0x9f, 0x77, 0x22, 0x71];
 
+	fn check_position(decoder: &Decoder<Cursor<Vec<u8>>>) {
+		assert_eq!(decoder.reader().position(), decoder.get_read_size());
+	}
+
 	fn finish_encode<W: Write>(encoder: Encoder<W>) -> W {
 		let (mut buffer, result) = encoder.finish();
 		result.unwrap();
@@ -140,8 +157,10 @@ mod test {
 
 		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
 		let mut actual = Vec::new();
-		
+		check_position(&decoder);
+
 		decoder.read_to_end(&mut actual).unwrap();
+		check_position(&decoder);
 		assert_eq!(expected, actual);
 		finish_decode(decoder);
 	}
@@ -157,8 +176,10 @@ mod test {
 
 		let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
 		let mut actual = Vec::new();
+		check_position(&decoder);
 		
 		decoder.read_to_end(&mut actual).unwrap();
+		check_position(&decoder);
 		assert_eq!(expected, actual);
 		finish_decode(decoder);
 	}
@@ -177,9 +198,11 @@ mod test {
 
 		let mut decoder = Decoder::new(Cursor::new(encoded)).unwrap();
 		let mut actual = Vec::new();
+		check_position(&decoder);
 		loop {
 			let mut buffer = [0; BUFFER_SIZE];
 			let size = decoder.read(&mut buffer).unwrap();
+			check_position(&decoder);
 			if size == 0 {
 				break;
 			}

@@ -24,7 +24,8 @@ pub struct Encoder<W> {
 	c: EncoderContext,
 	w: W,
 	limit: usize,
-	buffer: Vec<u8>
+	buffer: Vec<u8>,
+	written_size: u64,
 }
 
 impl EncoderBuilder {
@@ -85,7 +86,8 @@ impl EncoderBuilder {
 			w: w,
 			c: try! (EncoderContext::new()),
 			limit: block_size,
-			buffer: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(block_size as size_t, &preferences)})))
+			buffer: Vec::with_capacity(try! (check_error(unsafe {LZ4F_compressBound(block_size as size_t, &preferences)}))),
+			written_size: 0,
 		};
 		try! (encoder.write_header(&preferences));
 		Ok (encoder)
@@ -99,7 +101,7 @@ impl<W: Write> Encoder<W> {
 			let len = try! (check_error(LZ4F_compressBegin(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, preferences)));
 			self.buffer.set_len(len);
 		}
-		self.w.write_all(&self.buffer)
+		self.write_buffer()
 	}
 
 	fn write_end(&mut self) -> Result<()> {
@@ -107,7 +109,22 @@ impl<W: Write> Encoder<W> {
 			let len = try! (check_error(LZ4F_compressEnd(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, ptr::null())));
 			self.buffer.set_len(len);
 		};
+		self.write_buffer()
+	}
+
+	fn write_buffer(&mut self) -> Result<()> {
+		self.written_size += self.buffer.len() as u64;
 		self.w.write_all(&self.buffer)
+	}
+
+	/// Immutable writer reference.
+	pub fn writer(&self) -> &W {
+		&self.w
+	}
+
+	/// This function returns the number of bytes written to the writer at this point in time. 
+	pub fn get_written_size(&self) -> u64 {
+		self.written_size
 	}
 
 	/// This function is used to flag that this session of compression is done
@@ -128,10 +145,9 @@ impl<W: Write> Write for Encoder<W> {
 			unsafe {
 				let len = try! (check_error(LZ4F_compressUpdate(self.c.c, self.buffer.as_mut_ptr(), self.buffer.capacity() as size_t, buffer[offset..].as_ptr(), size as size_t, ptr::null())));
 				self.buffer.set_len(len);
-				try! (self.w.write_all(&self.buffer));
 			}
+			try! (self.write_buffer());
 			offset += size;
-			
 		}
 		Ok(buffer.len())
 	}
@@ -147,7 +163,7 @@ impl<W: Write> Write for Encoder<W> {
 				}
 				self.buffer.set_len(len);
 			};
-			try! (self.w.write_all(&self.buffer));
+			try! (self.write_buffer());
 		}
 		self.w.flush()
 	}
@@ -178,13 +194,20 @@ impl Drop for EncoderContext {
 #[cfg(test)]
 mod test {
 	use std::io::Write;
-	use super::EncoderBuilder;
+	use super::{Encoder, EncoderBuilder};
+
+	fn check_len(encoder: &Encoder<Vec<u8>>) {
+		assert_eq!(encoder.writer().len() as u64, encoder.get_written_size());
+	}
 
 	#[test]
 	fn test_encoder_smoke() {
 		let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
+		check_len(&encoder);
 		encoder.write(b"Some ").unwrap();
+		check_len(&encoder);
 		encoder.write(b"data").unwrap();
+		check_len(&encoder);
 		let (_, result) = encoder.finish();
 		result.unwrap();
 	}
@@ -198,8 +221,11 @@ mod test {
 			buffer.push((rnd & 0xFF) as u8);
 			rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
 		}
+		check_len(&encoder);
 		encoder.write(&buffer).unwrap();
+		check_len(&encoder);
 		let (_, result) = encoder.finish();
 		result.unwrap();
 	}
 }
+ 
