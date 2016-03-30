@@ -1,4 +1,5 @@
 extern crate gcc;
+extern crate skeptic;
 
 fn main() {
     let mut compiler = gcc::Config::new();
@@ -10,4 +11,6 @@ fn main() {
         // We always compile the C with optimization, because otherwise it is 20x slower.
         .opt_level(3) ;
     compiler.compile("liblz4.a");
+
+    skeptic::generate_doc_tests(&["README.md"]);
 }

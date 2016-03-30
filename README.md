@@ -15,16 +15,9 @@ Rustdoc: https://bozaro.github.io/lz4-rs/lz4/
 ## Usage
 
 Put this in your `Cargo.toml`:
-
 ```toml
 [dependencies]
 lz4 = "*"
-```
-
-And this in your crate root:
-
-```rust
-extern crate lz4;
 ```
 
 Sample code for compression/decompression:
