@@ -5,13 +5,11 @@ lz4
 [![Crates.io](https://img.shields.io/crates/v/lz4.svg)](https://crates.io/crates/lz4)
 [![GitHub license](https://img.shields.io/github/license/bozaro/lz4-rs.svg)](https://github.com/bozaro/lz4-rs/blob/master/LICENSE)
 [![Join the chat at https://gitter.im/bozaro/lz4-rs](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/bozaro/lz4-rs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Rustdoc](https://img.shields.io/badge/doc-rustdoc-green.svg)](https://bozaro.github.io/lz4-rs/lz4/)
 
 This repository contains binding for lz4 compression library (https://github.com/Cyan4973/lz4).
 
 LZ4 is a very fast lossless compression algorithm, providing compression speed at 400 MB/s per core, with near-linear scalability for multi-threaded applications. It also features an extremely fast decoder, with speed in multiple GB/s per core, typically reaching RAM speed limits on multi-core systems.
-
-
-Rustdoc: https://bozaro.github.io/lz4-rs/lz4/
 
 ## Usage
 
