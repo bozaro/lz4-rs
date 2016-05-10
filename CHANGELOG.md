@@ -1,3 +1,7 @@
+1.16.131:
+
+ * Don't use -ftree-vectorize optimization on i686-pc-windows-gnu for prevent crash
+
 1.15.131:
 
  * Add Encoder.writer() and Decoder.reader() methods (thanks to Paul Grandperrin)
