@@ -50,25 +50,3 @@ fn copy(src: &mut Read, dst: &mut Write) -> Result<()> {
     }
     Ok(())
 }
-
-struct Wrapper<W: Write> {
-    w: W,
-    written_size: usize,
-}
-
-impl<W: Write> Wrapper<W> {
-    pub fn get_written_size(&self) -> usize {
-        self.written_size
-    }
-}
-
-impl<W: Write> Write for Wrapper<W> {
-    fn write(&mut self, buffer: &[u8]) -> Result<usize> {
-        self.written_size += buffer.len();
-        self.w.write(buffer)
-    }
-
-    fn flush(&mut self) -> Result<()> {
-        self.w.flush()
-    }
-}
