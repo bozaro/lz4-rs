@@ -58,7 +58,6 @@ impl<R: Read> Read for Decoder<R> {
         let mut dst_offset: usize = 0;
         while dst_offset == 0 {
             if self.pos >= self.len {
-                self.pos = 0;
                 let need = match self.buf.len() < self.next {
                     true => self.buf.len(),
                     false => self.next,
@@ -67,6 +66,7 @@ impl<R: Read> Read for Decoder<R> {
                 if self.len <= 0 {
                     break;
                 }
+                self.pos = 0;
                 self.next -= self.len;
             }
             while (dst_offset < buf.len()) && (self.pos < self.len) {
