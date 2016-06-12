@@ -1,3 +1,7 @@
+1.17.131:
+
+ * Don't leave Decoder in invalid state if read fails #14 (thanks to bvinc83)
+
 1.16.131:
 
  * Don't use -ftree-vectorize optimization on i686-pc-windows-gnu for prevent crash
