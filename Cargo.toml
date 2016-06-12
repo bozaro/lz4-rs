@@ -17,6 +17,7 @@ doc = false
 libc = "0.2.5"
 
 [dev-dependencies]
+rand = "0.3.14"
 skeptic = "0.4"
 
 [build-dependencies]

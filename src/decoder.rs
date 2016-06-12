@@ -110,12 +110,66 @@ impl Drop for DecoderContext {
 
 #[cfg(test)]
 mod test {
-    use std::io::{Cursor, Read, Write};
+    extern crate rand;
+    use std::io::{Cursor, Read, Write, Result, Error, ErrorKind};
+    use self::rand::{Rng, StdRng};
     use super::super::encoder::{Encoder, EncoderBuilder};
     use super::Decoder;
 
     const BUFFER_SIZE: usize = 64 * 1024;
     const END_MARK: [u8; 4] = [0x9f, 0x77, 0x22, 0x71];
+
+    struct ErrorWrapper<R: Read, Rn: Rng> {
+        r: R,
+        rng: Rn,
+    }
+
+    impl<R: Read, Rn: Rng> ErrorWrapper<R, Rn> {
+        fn new(rng: Rn, read: R) -> Self {
+            ErrorWrapper {
+                r: read,
+                rng: rng,
+            }
+        }
+    }
+
+    impl<R: Read, Rn: Rng> Read for ErrorWrapper<R, Rn> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            if self.rng.next_u32() & 0x03 == 0 {
+                self.r.read(buf)
+            } else {
+                Err(Error::new(ErrorKind::Other, "Opss..."))
+            }
+        }
+    }
+
+    struct RetryWrapper<R: Read> {
+        r: R,
+    }
+
+    impl<R: Read> RetryWrapper<R> {
+        fn new(read: R) -> Self {
+            RetryWrapper { r: read }
+        }
+    }
+
+    impl<R: Read> Read for RetryWrapper<R> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            loop {
+                match self.r.read(buf) {
+                    Ok(v) => {
+                        return Ok(v);
+                    }
+                    Err(e) => {
+                        if e.kind() == ErrorKind::Other {
+                            continue;
+                        }
+                        return Err(e);
+                    }
+                }
+            }
+        }
+    }
 
     fn finish_encode<W: Write>(encoder: Encoder<W>) -> W {
         let (mut buffer, result) = encoder.finish();
@@ -125,13 +179,13 @@ mod test {
     }
 
     fn finish_decode<R: Read>(decoder: Decoder<R>) {
-        let (mut buffer, result) = decoder.finish();
+        let (buffer, result) = decoder.finish();
         result.unwrap();
 
         let mut mark = Vec::new();
         let mut data = Vec::new();
         mark.write(&END_MARK).unwrap();
-        buffer.read_to_end(&mut data).unwrap();
+        RetryWrapper::new(buffer).read_to_end(&mut data).unwrap();
         assert_eq!(mark, data);
     }
 
@@ -167,13 +221,9 @@ mod test {
 
     #[test]
     fn test_decoder_random() {
+        let mut rnd = random();
+        let expected = random_stream(&mut rnd, 1027 * 1023 * 7);
         let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
-        let mut expected = Vec::new();
-        let mut rnd: u32 = 42;
-        for _ in 0..1027 * 1023 * 7 {
-            expected.push((rnd & 0xFF) as u8);
-            rnd = ((1664525 as u64) * (rnd as u64) + (1013904223 as u64)) as u32;
-        }
         encoder.write(&expected).unwrap();
         let encoded = finish_encode(encoder);
 
@@ -189,5 +239,42 @@ mod test {
         }
         assert_eq!(expected, actual);
         finish_decode(decoder);
+    }
+
+    #[test]
+    fn test_retry_read() {
+        let mut rnd = random();
+        let expected = random_stream(&mut rnd, 1027 * 1023 * 7);
+        let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
+        encoder.write(&expected).unwrap();
+        let encoded = finish_encode(encoder);
+
+        let mut decoder = Decoder::new(ErrorWrapper::new(rnd.clone(), Cursor::new(encoded)))
+                              .unwrap();
+        let mut actual = Vec::new();
+        loop {
+            let mut buffer = [0; BUFFER_SIZE];
+            match decoder.read(&mut buffer) {
+                Ok(size) => {
+                    if size == 0 {
+                        break;
+                    }
+                    actual.write(&buffer[0..size]).unwrap();
+                }
+                Err(_) => {}
+            }
+        }
+
+        assert_eq!(expected, actual);
+        finish_decode(decoder);
+    }
+
+    fn random() -> StdRng {
+        let seed: &[_] = &[0xCD, 0x14, 0xD7, 0x08];
+        rand::SeedableRng::from_seed(seed)
+    }
+
+    fn random_stream<R: Rng>(rng: &mut R, size: usize) -> Vec<u8> {
+        rand::sample(rng, 0x00..0xFF, size)
     }
 }
