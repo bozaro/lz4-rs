@@ -1,3 +1,7 @@
+1.18.131:
+
+ * Implemented Send for Encoder/Decoder #15 (thanks to Maxime Lenoir)
+
 1.17.131:
 
  * Don't leave Decoder in invalid state if read fails #14 (thanks to bvinc83)
