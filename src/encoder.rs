@@ -170,7 +170,7 @@ impl<W: Write> Write for Encoder<W> {
 
 impl EncoderContext {
     fn new() -> Result<EncoderContext> {
-        let mut context: LZ4FCompressionContext = ptr::null_mut();
+        let mut context = LZ4FCompressionContext(ptr::null_mut());
         try!(check_error(unsafe { LZ4F_createCompressionContext(&mut context, LZ4F_VERSION) }));
         Ok(EncoderContext { c: context })
     }
@@ -208,5 +208,12 @@ mod test {
         encoder.write(&buffer).unwrap();
         let (_, result) = encoder.finish();
         result.unwrap();
+    }
+
+    #[test]
+    fn test_encoder_send() {
+        fn check_send<S: Send>(_: &S) {}
+        let enc = EncoderBuilder::new().build(Vec::new());
+        check_send(&enc);
     }
 }
