@@ -96,7 +96,7 @@ impl<R: Read> Read for Decoder<R> {
 
 impl DecoderContext {
     fn new() -> Result<DecoderContext> {
-        let mut context: LZ4FDecompressionContext = ptr::null_mut();
+        let mut context = LZ4FDecompressionContext(ptr::null_mut());
         try!(check_error(unsafe { LZ4F_createDecompressionContext(&mut context, LZ4F_VERSION) }));
         Ok(DecoderContext { c: context })
     }
@@ -276,5 +276,12 @@ mod test {
 
     fn random_stream<R: Rng>(rng: &mut R, size: usize) -> Vec<u8> {
         rand::sample(rng, 0x00..0xFF, size)
+    }
+
+    #[test]
+    fn test_decoder_send() {
+        fn check_send<S: Send>(_: &S) {}
+        let dec = Decoder::new(Cursor::new(Vec::new())).unwrap();
+        check_send(&dec);
     }
 }

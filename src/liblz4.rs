@@ -7,9 +7,15 @@ use std::ffi::CStr;
 
 use libc::{c_void, c_char, c_uint, size_t};
 
-pub type LZ4FCompressionContext = *mut c_void;
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct LZ4FCompressionContext(pub *mut c_void);
+unsafe impl Send for LZ4FCompressionContext {}
 
-pub type LZ4FDecompressionContext = *mut c_void;
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct LZ4FDecompressionContext(pub *mut c_void);
+unsafe impl Send for LZ4FDecompressionContext {}
 
 pub type LZ4FErrorCode = size_t;
 
