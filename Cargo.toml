@@ -1,7 +1,7 @@
 [package]
 name = "lz4"
 license = "MIT"
-version = "1.18.131"
+version = "1.19.131"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "src/build.rs"
 description = "Rust LZ4 bindings library."

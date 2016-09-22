@@ -1,3 +1,7 @@
+1.19.131:
+
+ * Update dependencies for correct work with change build environmet via `rustup override`
+
 1.18.131:
 
  * Implemented Send for Encoder/Decoder #15 (thanks to Maxime Lenoir)
