@@ -14,12 +14,12 @@ test = false
 doc = false
 
 [dependencies]
-libc = "0.2.5"
+libc = "0.2.16"
 
 [dev-dependencies]
 rand = "0.3.14"
 skeptic = "0.6.1"
 
 [build-dependencies]
-gcc = "0.3.21"
+gcc = "0.3.35"
 skeptic = "0.6.1"
