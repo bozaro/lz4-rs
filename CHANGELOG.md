@@ -1,3 +1,7 @@
+1.19.173:
+
+ * Update lz4 to v1.7.3
+
 1.19.131:
 
  * Update dependencies for correct work with change build environmet via `rustup override`
