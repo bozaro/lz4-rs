@@ -1,6 +1,6 @@
 extern crate libc;
 
-pub mod liblz4;
+extern crate lz4_sys as liblz4;
 
 mod decoder;
 mod encoder;

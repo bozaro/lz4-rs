@@ -3,7 +3,7 @@ name = "lz4"
 license = "MIT"
 version = "1.19.173"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
-build = "src/build.rs"
+build = "build.rs"
 description = "Rust LZ4 bindings library."
 repository = "https://github.com/bozaro/lz4-rs"
 documentation = "https://bozaro.github.io/lz4-rs/lz4/"
@@ -15,6 +15,7 @@ doc = false
 
 [dependencies]
 libc = "0.2.17"
+lz4-sys = { path = "lz4-sys", version = "1.19.173" }
 
 [dev-dependencies]
 rand = "0.3.14"
