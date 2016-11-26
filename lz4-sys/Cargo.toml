@@ -1,0 +1,15 @@
+[package]
+name = "lz4-sys"
+license = "MIT"
+links = "lz4"
+version = "1.0.1+1.7.3"
+authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
+build = "build.rs"
+description = "Rust LZ4 sys package."
+repository = "https://github.com/bozaro/lz4-rs"
+
+[dependencies]
+libc = "0.2.17"
+
+[build-dependencies]
+gcc = "0.3.38"

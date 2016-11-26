@@ -1,3 +1,5 @@
+extern crate libc;
+
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::io::Error;

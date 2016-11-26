@@ -1,5 +1,4 @@
 extern crate gcc;
-extern crate skeptic;
 
 use std::env;
 
@@ -21,6 +20,4 @@ fn main() {
       _ => {}
     }
     compiler.compile("liblz4.a");
-
-    skeptic::generate_doc_tests(&["README.md"]);
 }
