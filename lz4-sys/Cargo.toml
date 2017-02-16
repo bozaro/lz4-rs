@@ -2,7 +2,7 @@
 name = "lz4-sys"
 license = "MIT"
 links = "lz4"
-version = "1.0.1+1.7.3"
+version = "1.0.1+1.7.5"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "build.rs"
 description = "Rust LZ4 sys package."
