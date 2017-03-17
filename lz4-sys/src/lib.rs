@@ -344,5 +344,5 @@ extern "C" {
 
 #[test]
 fn test_version_number() {
-    unsafe { LZ4_versionNumber() }
+    unsafe { LZ4_versionNumber(); }
 }
