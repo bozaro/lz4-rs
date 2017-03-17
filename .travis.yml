@@ -3,6 +3,7 @@ sudo: false
 script:
 - cargo build --verbose
 - cargo test --verbose
+- pushd lz4-sys; cargo test --verbose; popd
 - cargo doc
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
