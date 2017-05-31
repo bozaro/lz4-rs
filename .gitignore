@@ -13,3 +13,6 @@
 *.rs.bk
 /lz4-sys/target/
 /lz4-sys/*.lock
+
+# Idea
+/.idea/
