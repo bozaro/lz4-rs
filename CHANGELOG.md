@@ -1,6 +1,6 @@
 1.21.0:
 
- * Fix smallest 11-byte stream decoding
+ * Fix smallest 11-byte stream decoding (thanks to Niklas Hambüchen)
  * Update lz4 to v1.7.5
 
 1.20.0:
