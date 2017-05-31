@@ -1,3 +1,8 @@
+1.21.0:
+
+ * Fix smallest 11-byte stream decoding
+ * Update lz4 to v1.7.5
+
 1.20.0:
 
  * Split out separate sys package #16 (thanks to Thijs Cadier)
