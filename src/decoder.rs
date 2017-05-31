@@ -29,7 +29,8 @@ impl<R: Read> Decoder<R> {
             buf: vec![0; BUFFER_SIZE].into_boxed_slice(),
             pos: BUFFER_SIZE,
             len: BUFFER_SIZE,
-            next: 15, // Minimal LZ4 stream size
+            // Minimal LZ4 stream size
+            next: 11,
         })
     }
 
@@ -111,6 +112,7 @@ impl Drop for DecoderContext {
 #[cfg(test)]
 mod test {
     extern crate rand;
+
     use std::io::{Cursor, Read, Write, Result, Error, ErrorKind};
     use self::rand::{Rng, StdRng};
     use super::super::encoder::{Encoder, EncoderBuilder};
@@ -203,6 +205,20 @@ mod test {
     }
 
     #[test]
+    fn test_decoder_smallest() {
+        let expected: Vec<u8> = Vec::new();
+        let mut buffer = b"\x04\x22\x4d\x18\x40\x40\xc0\x00\x00\x00\x00".to_vec();
+        buffer.write(&END_MARK).unwrap();
+
+        let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
+        let mut actual = Vec::new();
+
+        decoder.read_to_end(&mut actual).unwrap();
+        assert_eq!(expected, actual);
+        finish_decode(decoder);
+    }
+
+    #[test]
     fn test_decoder_smoke() {
         let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
         let mut expected = Vec::new();
@@ -250,7 +266,7 @@ mod test {
         let encoded = finish_encode(encoder);
 
         let mut decoder = Decoder::new(ErrorWrapper::new(rnd.clone(), Cursor::new(encoded)))
-                              .unwrap();
+            .unwrap();
         let mut actual = Vec::new();
         loop {
             let mut buffer = [0; BUFFER_SIZE];

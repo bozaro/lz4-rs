@@ -32,8 +32,8 @@ pub fn check_error(code: LZ4FErrorCode) -> Result<usize, Error> {
             let error_name = LZ4F_getErrorName(code);
             return Err(Error::new(ErrorKind::Other,
                                   LZ4Error(str::from_utf8(CStr::from_ptr(error_name).to_bytes())
-                                               .unwrap()
-                                               .to_string())));
+                                      .unwrap()
+                                      .to_string())));
         }
     }
     Ok(code as usize)
