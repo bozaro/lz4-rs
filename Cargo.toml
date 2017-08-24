@@ -2,6 +2,7 @@
 name = "lz4"
 license = "MIT"
 version = "1.21.1"
+readme = "README.md"
 authors = [ "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "build.rs"
 description = "Rust LZ4 bindings library."
