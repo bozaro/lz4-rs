@@ -23,5 +23,4 @@ rand = "0.3.15"
 skeptic = "0.9.0"
 
 [build-dependencies]
-gcc = "0.3.49"
 skeptic = "0.9.0"
