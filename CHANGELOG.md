@@ -1,3 +1,12 @@
+1.22.0:
+
+ * Update lz4 to v1.8.0
+ * Remove lz4 redundant dependency to gcc #22 (thanks to Xidorn Quan)
+
+1.21.1:
+
+ * Fix always rebuild issue #21
+
 1.21.0:
 
  * Fix smallest 11-byte stream decoding (thanks to Niklas Hambüchen)
