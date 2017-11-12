@@ -3,7 +3,7 @@ extern crate gcc;
 use std::env;
 
 fn main() {
-    let mut compiler = gcc::Config::new();
+    let mut compiler = gcc::Build::new();
     compiler
         .file("liblz4/lib/lz4.c")
         .file("liblz4/lib/lz4frame.c")
