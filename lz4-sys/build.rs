@@ -1,10 +1,10 @@
-extern crate gcc;
+extern crate cc;
 
 use std::{env, fs};
 use std::path::PathBuf;
 
 fn main() {
-    let mut compiler = gcc::Build::new();
+    let mut compiler = cc::Build::new();
     compiler
         .file("liblz4/lib/lz4.c")
         .file("liblz4/lib/lz4frame.c")
