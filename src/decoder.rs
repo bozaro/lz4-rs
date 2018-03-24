@@ -291,7 +291,7 @@ mod test {
     }
 
     fn random_stream<R: Rng>(rng: &mut R, size: usize) -> Vec<u8> {
-        rand::sample(rng, 0x00..0xFF, size)
+        (0..size).map(|_| rng.gen()).collect()
     }
 
     #[test]
