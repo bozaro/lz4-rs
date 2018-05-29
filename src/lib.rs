@@ -6,6 +6,8 @@ pub mod liblz4;
 mod decoder;
 mod encoder;
 
+pub mod block;
+
 pub use decoder::Decoder;
 pub use encoder::Encoder;
 pub use encoder::EncoderBuilder;

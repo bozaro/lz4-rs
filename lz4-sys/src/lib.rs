@@ -1,7 +1,7 @@
 #![no_std]
 extern crate libc;
 
-use libc::{c_void, c_char, c_uint, size_t};
+use libc::{c_void, c_char, c_uint, size_t, c_int};
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -91,6 +91,23 @@ pub struct LZ4StreamDecode(c_void);
 pub const LZ4F_VERSION: c_uint = 100;
 
 extern "C" {
+
+    // int LZ4_compress_default(const char* source, char* dest, int sourceSize, int maxDestSize);
+    #[allow(non_snake_case)]
+    pub fn LZ4_compress_default (source: *const c_char, dest: *mut c_char, sourceSize: i32, maxDestSize: i32) -> i32;
+
+    // int LZ4_compress_fast (const char* source, char* dest, int sourceSize, int maxDestSize, int acceleration);
+    #[allow(non_snake_case)]
+    pub fn LZ4_compress_fast (source: *const c_char, dest: *mut c_char, sourceSize: i32, maxDestSize: i32, acceleration: i32) -> i32;
+
+    // int LZ4_compress_HC (const char* src, char* dst, int srcSize, int dstCapacity, int compressionLevel);
+    #[allow(non_snake_case)]
+    pub fn LZ4_compress_HC (src: *const c_char, dst: *mut c_char, srcSize: i32, dstCapacity: i32, compressionLevel: i32) -> i32;
+
+    // int LZ4_decompress_safe (const char* source, char* dest, int compressedSize, int maxDecompressedSize);
+    #[allow(non_snake_case)]
+    pub fn LZ4_decompress_safe (source: *const c_char, dest: *mut c_char, compressedSize: i32, maxDecompressedSize: i32) -> i32;
+
     // unsigned    LZ4F_isError(LZ4F_errorCode_t code);
     pub fn LZ4F_isError(code: size_t) -> c_uint;
 
