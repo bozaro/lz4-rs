@@ -1,7 +1,7 @@
-use std::io::{Error, ErrorKind, Read, Result};
-use std::ptr;
 use super::liblz4::*;
 use libc::size_t;
+use std::io::{Error, ErrorKind, Read, Result};
+use std::ptr;
 
 const BUFFER_SIZE: usize = 32 * 1024;
 
@@ -40,14 +40,16 @@ impl<R: Read> Decoder<R> {
     }
 
     pub fn finish(self) -> (R, Result<()>) {
-        (self.r,
-         match self.next {
-            0 => Ok(()),
-            _ => {
-                Err(Error::new(ErrorKind::Interrupted,
-                               "Finish runned before read end of compressed stream"))
-            }
-        })
+        (
+            self.r,
+            match self.next {
+                0 => Ok(()),
+                _ => Err(Error::new(
+                    ErrorKind::Interrupted,
+                    "Finish runned before read end of compressed stream",
+                )),
+            },
+        )
     }
 }
 
@@ -74,12 +76,14 @@ impl<R: Read> Read for Decoder<R> {
                 let mut src_size = (self.len - self.pos) as size_t;
                 let mut dst_size = (buf.len() - dst_offset) as size_t;
                 let len = try!(check_error(unsafe {
-                    LZ4F_decompress(self.c.c,
-                                    buf[dst_offset..].as_mut_ptr(),
-                                    &mut dst_size,
-                                    self.buf[self.pos..].as_ptr(),
-                                    &mut src_size,
-                                    ptr::null())
+                    LZ4F_decompress(
+                        self.c.c,
+                        buf[dst_offset..].as_mut_ptr(),
+                        &mut dst_size,
+                        self.buf[self.pos..].as_ptr(),
+                        &mut src_size,
+                        ptr::null(),
+                    )
                 }));
                 self.pos += src_size as usize;
                 dst_offset += dst_size as usize;
@@ -98,7 +102,9 @@ impl<R: Read> Read for Decoder<R> {
 impl DecoderContext {
     fn new() -> Result<DecoderContext> {
         let mut context = LZ4FDecompressionContext(ptr::null_mut());
-        try!(check_error(unsafe { LZ4F_createDecompressionContext(&mut context, LZ4F_VERSION) }));
+        try!(check_error(unsafe {
+            LZ4F_createDecompressionContext(&mut context, LZ4F_VERSION)
+        }));
         Ok(DecoderContext { c: context })
     }
 }
@@ -113,10 +119,10 @@ impl Drop for DecoderContext {
 mod test {
     extern crate rand;
 
-    use std::io::{Cursor, Read, Write, Result, Error, ErrorKind};
     use self::rand::{Rng, StdRng};
     use super::super::encoder::{Encoder, EncoderBuilder};
     use super::Decoder;
+    use std::io::{Cursor, Error, ErrorKind, Read, Result, Write};
 
     const BUFFER_SIZE: usize = 64 * 1024;
     const END_MARK: [u8; 4] = [0x9f, 0x77, 0x22, 0x71];
@@ -128,10 +134,7 @@ mod test {
 
     impl<R: Read, Rn: Rng> ErrorWrapper<R, Rn> {
         fn new(rng: Rn, read: R) -> Self {
-            ErrorWrapper {
-                r: read,
-                rng: rng,
-            }
+            ErrorWrapper { r: read, rng: rng }
         }
     }
 
@@ -265,8 +268,8 @@ mod test {
         encoder.write(&expected).unwrap();
         let encoded = finish_encode(encoder);
 
-        let mut decoder = Decoder::new(ErrorWrapper::new(rnd.clone(), Cursor::new(encoded)))
-            .unwrap();
+        let mut decoder =
+            Decoder::new(ErrorWrapper::new(rnd.clone(), Cursor::new(encoded))).unwrap();
         let mut actual = Vec::new();
         loop {
             let mut buffer = [0; BUFFER_SIZE];

@@ -1,9 +1,9 @@
-use std::io::Write;
-use std::io::Result;
-use std::cmp;
-use std::ptr;
 use super::liblz4::*;
 use libc::size_t;
+use std::cmp;
+use std::io::Result;
+use std::io::Write;
+use std::ptr;
 
 struct EncoderContext {
     c: LZ4FCompressionContext,
@@ -95,10 +95,12 @@ impl EncoderBuilder {
 impl<W: Write> Encoder<W> {
     fn write_header(&mut self, preferences: &LZ4FPreferences) -> Result<()> {
         unsafe {
-            let len = try!(check_error(LZ4F_compressBegin(self.c.c,
-                                                          self.buffer.as_mut_ptr(),
-                                                          self.buffer.capacity() as size_t,
-                                                          preferences)));
+            let len = try!(check_error(LZ4F_compressBegin(
+                self.c.c,
+                self.buffer.as_mut_ptr(),
+                self.buffer.capacity() as size_t,
+                preferences
+            )));
             self.buffer.set_len(len);
         }
         self.w.write_all(&self.buffer)
@@ -106,10 +108,12 @@ impl<W: Write> Encoder<W> {
 
     fn write_end(&mut self) -> Result<()> {
         unsafe {
-            let len = try!(check_error(LZ4F_compressEnd(self.c.c,
-                                                        self.buffer.as_mut_ptr(),
-                                                        self.buffer.capacity() as size_t,
-                                                        ptr::null())));
+            let len = try!(check_error(LZ4F_compressEnd(
+                self.c.c,
+                self.buffer.as_mut_ptr(),
+                self.buffer.capacity() as size_t,
+                ptr::null()
+            )));
             self.buffer.set_len(len);
         };
         self.w.write_all(&self.buffer)
@@ -135,17 +139,18 @@ impl<W: Write> Write for Encoder<W> {
         while offset < buffer.len() {
             let size = cmp::min(buffer.len() - offset, self.limit);
             unsafe {
-                let len = try!(check_error(LZ4F_compressUpdate(self.c.c,
-                                                               self.buffer.as_mut_ptr(),
-                                                               self.buffer.capacity() as size_t,
-                                                               buffer[offset..].as_ptr(),
-                                                               size as size_t,
-                                                               ptr::null())));
+                let len = try!(check_error(LZ4F_compressUpdate(
+                    self.c.c,
+                    self.buffer.as_mut_ptr(),
+                    self.buffer.capacity() as size_t,
+                    buffer[offset..].as_ptr(),
+                    size as size_t,
+                    ptr::null()
+                )));
                 self.buffer.set_len(len);
                 try!(self.w.write_all(&self.buffer));
             }
             offset += size;
-
         }
         Ok(buffer.len())
     }
@@ -153,10 +158,12 @@ impl<W: Write> Write for Encoder<W> {
     fn flush(&mut self) -> Result<()> {
         loop {
             unsafe {
-                let len = try!(check_error(LZ4F_flush(self.c.c,
-                                                      self.buffer.as_mut_ptr(),
-                                                      self.buffer.capacity() as size_t,
-                                                      ptr::null())));
+                let len = try!(check_error(LZ4F_flush(
+                    self.c.c,
+                    self.buffer.as_mut_ptr(),
+                    self.buffer.capacity() as size_t,
+                    ptr::null()
+                )));
                 if len == 0 {
                     break;
                 }
@@ -171,7 +178,9 @@ impl<W: Write> Write for Encoder<W> {
 impl EncoderContext {
     fn new() -> Result<EncoderContext> {
         let mut context = LZ4FCompressionContext(ptr::null_mut());
-        try!(check_error(unsafe { LZ4F_createCompressionContext(&mut context, LZ4F_VERSION) }));
+        try!(check_error(unsafe {
+            LZ4F_createCompressionContext(&mut context, LZ4F_VERSION)
+        }));
         Ok(EncoderContext { c: context })
     }
 }
@@ -184,8 +193,8 @@ impl Drop for EncoderContext {
 
 #[cfg(test)]
 mod test {
-    use std::io::Write;
     use super::EncoderBuilder;
+    use std::io::Write;
 
     #[test]
     fn test_encoder_smoke() {
