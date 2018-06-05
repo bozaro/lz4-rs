@@ -116,7 +116,7 @@ pub fn decompress(mut src: &[u8], uncompressed_size: Option<i32>) -> Result<Vec<
         if src.len() < 4 {
             return Err(Error::new(ErrorKind::InvalidInput, "Source buffer must at least contain size prefix."));
         }
-        size = ((src[0] as i32) | (src[1] as i32) << 8 | (src[2] as i32) << 16 | (src[3] as i32) << 24);
+        size = (src[0] as i32) | (src[1] as i32) << 8 | (src[2] as i32) << 16 | (src[3] as i32) << 24;
 
         src = &src[4..];
     }
