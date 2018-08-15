@@ -336,11 +336,31 @@ extern "C" {
                                  input_size: c_int)
                                  -> c_int;
 
+    // int LZ4_compress_default(const char* source,
+    //                          char* dest,
+    //                          int inputSize,
+    //                          int maxOutputSize)
+    pub fn LZ4_compress_default(source: *const u8,
+                                dest: *mut u8,
+                                input_size: i32,
+                                max_output_size: i32)
+                                -> i32;
+
     // int LZ4_freeStream(LZ4_stream_t* LZ4_streamPtr)
     pub fn LZ4_freeStream(LZ4_stream: *mut LZ4StreamEncode) -> c_int;
 
     // LZ4_streamDecode_t* LZ4_createStreamDecode(void)
     pub fn LZ4_createStreamDecode() -> *mut LZ4StreamDecode;
+
+    // int LZ4_decompress_safe(const char* source,
+    //                         char* dest,
+    //                         int compressedSize,
+    //                         int maxDecompressedSize)
+    pub fn LZ4_decompress_safe(source: *const u8,
+                               dest: *mut u8,
+                               compressed_size: i32,
+                               max_decompressed_size: i32)
+                               -> i32;
 
     // int LZ4_decompress_safe_continue(LZ4_streamDecode_t* LZ4_streamDecode,
     //                                  const char* source,
