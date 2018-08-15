@@ -1,7 +1,7 @@
 #![no_std]
 extern crate libc;
 
-use libc::{c_void, c_char, c_uint, size_t};
+use libc::{c_void, c_char, c_uint, size_t, c_int};
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -91,6 +91,23 @@ pub struct LZ4StreamDecode(c_void);
 pub const LZ4F_VERSION: c_uint = 100;
 
 extern "C" {
+
+    // int LZ4_compress_default(const char* source, char* dest, int sourceSize, int maxDestSize);
+    #[allow(non_snake_case)]
+    pub fn LZ4_compress_default (source: *const c_char, dest: *mut c_char, sourceSize: c_int, maxDestSize: c_int) -> c_int;
+
+    // int LZ4_compress_fast (const char* source, char* dest, int sourceSize, int maxDestSize, int acceleration);
+    #[allow(non_snake_case)]
+    pub fn LZ4_compress_fast (source: *const c_char, dest: *mut c_char, sourceSize: c_int, maxDestSize: c_int, acceleration: c_int) -> c_int;
+
+    // int LZ4_compress_HC (const char* src, char* dst, int srcSize, int dstCapacity, int compressionLevel);
+    #[allow(non_snake_case)]
+    pub fn LZ4_compress_HC (src: *const c_char, dst: *mut c_char, srcSize: c_int, dstCapacity: c_int, compressionLevel: c_int) -> c_int;
+
+    // int LZ4_decompress_safe (const char* source, char* dest, int compressedSize, int maxDecompressedSize);
+    #[allow(non_snake_case)]
+    pub fn LZ4_decompress_safe (source: *const c_char, dest: *mut c_char, compressedSize: c_int, maxDecompressedSize: c_int) -> c_int;
+
     // unsigned    LZ4F_isError(LZ4F_errorCode_t code);
     pub fn LZ4F_isError(code: size_t) -> c_uint;
 
@@ -301,10 +318,10 @@ extern "C" {
                            -> LZ4FErrorCode;
 
     // int LZ4_versionNumber(void)
-    pub fn LZ4_versionNumber() -> i32;
+    pub fn LZ4_versionNumber() -> c_int;
 
     // int LZ4_compressBound(int isize)
-    pub fn LZ4_compressBound(size: i32) -> i32;
+    pub fn LZ4_compressBound(size: c_int) -> c_int;
 
     // LZ4_stream_t* LZ4_createStream(void)
     pub fn LZ4_createStream() -> *mut LZ4StreamEncode;
@@ -316,11 +333,11 @@ extern "C" {
     pub fn LZ4_compress_continue(LZ4_stream: *mut LZ4StreamEncode,
                                  source: *const u8,
                                  dest: *mut u8,
-                                 input_size: i32)
-                                 -> i32;
+                                 input_size: c_int)
+                                 -> c_int;
 
     // int LZ4_freeStream(LZ4_stream_t* LZ4_streamPtr)
-    pub fn LZ4_freeStream(LZ4_stream: *mut LZ4StreamEncode) -> i32;
+    pub fn LZ4_freeStream(LZ4_stream: *mut LZ4StreamEncode) -> c_int;
 
     // LZ4_streamDecode_t* LZ4_createStreamDecode(void)
     pub fn LZ4_createStreamDecode() -> *mut LZ4StreamDecode;
@@ -333,12 +350,12 @@ extern "C" {
     pub fn LZ4_decompress_safe_continue(LZ4_stream: *mut LZ4StreamDecode,
                                         source: *const u8,
                                         dest: *mut u8,
-                                        compressed_size: i32,
-                                        max_decompressed_size: i32)
-                                        -> i32;
+                                        compressed_size: c_int,
+                                        max_decompressed_size: c_int)
+                                        -> c_int;
 
     // int LZ4_freeStreamDecode(LZ4_streamDecode_t* LZ4_stream)
-    pub fn LZ4_freeStreamDecode(LZ4_stream: *mut LZ4StreamDecode) -> i32;
+    pub fn LZ4_freeStreamDecode(LZ4_stream: *mut LZ4StreamDecode) -> c_int;
 
 }
 
