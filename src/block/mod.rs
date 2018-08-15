@@ -42,15 +42,24 @@ pub enum CompressionMode {
 /// this happens, the C api was not able to provide more information about the cause.
 ///
 pub fn compress(src: &[u8], mode: Option<CompressionMode>, prepend_size: bool) -> Result<Vec<u8>> {
-
     // 0 iff src too large
     let compress_bound: i32 = unsafe { LZ4_compressBound(src.len() as i32) };
 
     if src.len() > (i32::max_value() as usize) || compress_bound <= 0 {
-        return Err(Error::new(ErrorKind::InvalidInput, "Compression input too long."));
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "Compression input too long.",
+        ));
     }
 
-    let mut compressed: Vec<u8> = vec![0; (if prepend_size { compress_bound + 4 } else { compress_bound }) as usize];
+    let mut compressed: Vec<u8> = vec![
+        0;
+        (if prepend_size {
+            compress_bound + 4
+        } else {
+            compress_bound
+        }) as usize
+    ];
 
     let dec_size;
     {
@@ -68,32 +77,38 @@ pub fn compress(src: &[u8], mode: Option<CompressionMode>, prepend_size: bool) -
 
         dec_size = match mode {
             Some(CompressionMode::HIGHCOMPRESSION(level)) => unsafe {
-                LZ4_compress_HC(src.as_ptr() as *const i8,
-                                dst_buf.as_mut_ptr() as *mut i8,
-                                src.len() as i32,
-                                compress_bound,
-                                level)
+                LZ4_compress_HC(
+                    src.as_ptr() as *const i8,
+                    dst_buf.as_mut_ptr() as *mut i8,
+                    src.len() as i32,
+                    compress_bound,
+                    level,
+                )
             },
             Some(CompressionMode::FAST(accel)) => unsafe {
-                LZ4_compress_fast(src.as_ptr() as *const i8,
-                                  dst_buf.as_mut_ptr() as *mut i8,
-                                  src.len() as i32,
-                                  compress_bound,
-                                  accel)
+                LZ4_compress_fast(
+                    src.as_ptr() as *const i8,
+                    dst_buf.as_mut_ptr() as *mut i8,
+                    src.len() as i32,
+                    compress_bound,
+                    accel,
+                )
             },
             _ => unsafe {
-                LZ4_compress_default(src.as_ptr() as *const i8,
-                                     dst_buf.as_mut_ptr() as *mut i8,
-                                     src.len() as i32,
-                                     compress_bound)
-            }
+                LZ4_compress_default(
+                    src.as_ptr() as *const i8,
+                    dst_buf.as_mut_ptr() as *mut i8,
+                    src.len() as i32,
+                    compress_bound,
+                )
+            },
         };
     }
     if dec_size <= 0 {
         return Err(Error::new(ErrorKind::Other, "Compression failed"));
     }
 
-    compressed.truncate(if prepend_size {dec_size + 4} else {dec_size} as usize);
+    compressed.truncate(if prepend_size { dec_size + 4 } else { dec_size } as usize);
     Ok(compressed)
 }
 
@@ -114,38 +129,50 @@ pub fn decompress(mut src: &[u8], uncompressed_size: Option<i32>) -> Result<Vec<
         size = s;
     } else {
         if src.len() < 4 {
-            return Err(Error::new(ErrorKind::InvalidInput, "Source buffer must at least contain size prefix."));
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Source buffer must at least contain size prefix.",
+            ));
         }
-        size = (src[0] as i32) | (src[1] as i32) << 8 | (src[2] as i32) << 16 | (src[3] as i32) << 24;
+        size =
+            (src[0] as i32) | (src[1] as i32) << 8 | (src[2] as i32) << 16 | (src[3] as i32) << 24;
 
         src = &src[4..];
     }
 
     if size <= 0 {
-        return Err(Error::new(ErrorKind::InvalidInput,
-                              if uncompressed_size.is_some() {
-                                  "Size parameter must not be negative."
-                              } else {
-                                  "Parsed size prefix in buffer must not be negative."
-                              }));
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            if uncompressed_size.is_some() {
+                "Size parameter must not be negative."
+            } else {
+                "Parsed size prefix in buffer must not be negative."
+            },
+        ));
     }
 
     if unsafe { LZ4_compressBound(size) } <= 0 {
-        return Err(Error::new(ErrorKind::InvalidInput, "Given size parameter is too big"));
+        return Err(Error::new(
+            ErrorKind::InvalidInput,
+            "Given size parameter is too big",
+        ));
     }
-
 
     let mut decompressed = vec![0u8; size as usize];
     let dec_bytes = unsafe {
-        LZ4_decompress_safe(src.as_ptr() as *const i8,
-                            decompressed.as_mut_ptr() as *mut i8,
-                            src.len() as i32,
-                            size,
+        LZ4_decompress_safe(
+            src.as_ptr() as *const i8,
+            decompressed.as_mut_ptr() as *mut i8,
+            src.len() as i32,
+            size,
         )
     };
 
     if dec_bytes < 0 {
-        return Err(Error::new(ErrorKind::InvalidData, "Decompression failed. Input invalid or too long?"));
+        return Err(Error::new(
+            ErrorKind::InvalidData,
+            "Decompression failed. Input invalid or too long?",
+        ));
     }
 
     decompressed.truncate(dec_bytes as usize);
@@ -163,20 +190,29 @@ mod test {
         for i in 0..size {
             to_compress.push(i as u8);
         }
-        let mut v: Vec<Vec<u8>> = vec!();
+        let mut v: Vec<Vec<u8>> = vec![];
         for i in 1..100 {
             v.push(compress(&to_compress, Some(CompressionMode::FAST(i)), false).unwrap());
         }
 
         // 12 is max high compression parameter
         for i in 1..12 {
-            v.push(compress(&to_compress, Some(CompressionMode::HIGHCOMPRESSION(i)), false).unwrap());
+            v.push(
+                compress(
+                    &to_compress,
+                    Some(CompressionMode::HIGHCOMPRESSION(i)),
+                    false,
+                ).unwrap(),
+            );
         }
 
         v.push(compress(&to_compress, None, false).unwrap());
 
         for val in v {
-            assert_eq!(decompress(&val, Some(to_compress.len() as i32)).unwrap(), to_compress);
+            assert_eq!(
+                decompress(&val, Some(to_compress.len() as i32)).unwrap(),
+                to_compress
+            );
         }
     }
 
@@ -187,14 +223,20 @@ mod test {
         for i in 0..size {
             to_compress.push(i as u8);
         }
-        let mut v: Vec<Vec<u8>> = vec!();
+        let mut v: Vec<Vec<u8>> = vec![];
         for i in 1..100 {
             v.push(compress(&to_compress, Some(CompressionMode::FAST(i)), true).unwrap());
         }
 
         // 12 is max high compression parameter
         for i in 1..12 {
-            v.push(compress(&to_compress, Some(CompressionMode::HIGHCOMPRESSION(i)), true).unwrap());
+            v.push(
+                compress(
+                    &to_compress,
+                    Some(CompressionMode::HIGHCOMPRESSION(i)),
+                    true,
+                ).unwrap(),
+            );
         }
 
         v.push(compress(&to_compress, None, true).unwrap());
@@ -204,13 +246,12 @@ mod test {
         }
     }
 
-
     #[test]
     fn test_decompression_with_prefix() {
-        let compressed: [u8; 250] = [0, 188, 0, 0, 255, 32, 116, 104, 105, 115, 32, 105, 115, 32, 97,
-            32, 116, 101, 115, 116, 32, 115, 116, 114, 105, 110, 103, 32, 99, 111, 109, 112, 114,
-            101, 115, 115, 101, 100, 32, 98, 121, 32, 112, 121, 116, 104, 111, 110, 45, 108, 122,
-            52, 32, 47, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        let compressed: [u8; 250] = [
+            0, 188, 0, 0, 255, 32, 116, 104, 105, 115, 32, 105, 115, 32, 97, 32, 116, 101, 115,
+            116, 32, 115, 116, 114, 105, 110, 103, 32, 99, 111, 109, 112, 114, 101, 115, 115, 101,
+            100, 32, 98, 121, 32, 112, 121, 116, 104, 111, 110, 45, 108, 122, 52, 32, 47, 0, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
@@ -221,7 +262,9 @@ mod test {
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
             255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-            255, 255, 255, 255, 117, 80, 45, 108, 122, 52, 32];
+            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+            117, 80, 45, 108, 122, 52, 32,
+        ];
 
         let mut reference: String = String::new();
         for _ in 0..1024 {
