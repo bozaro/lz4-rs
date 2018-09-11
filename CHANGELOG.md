@@ -1,3 +1,7 @@
+1.23.0:
+ * Update lz4 to v1.8.2
+ * Add lz4 block mode api
+
 1.22.0:
 
  * Update lz4 to v1.8.0
