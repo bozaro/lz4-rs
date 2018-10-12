@@ -19,6 +19,7 @@
 //! ```
 
 use super::liblz4::*;
+use libc::c_char;
 use std::io::{Error, ErrorKind, Result};
 
 /// Represents the compression mode do be used.
@@ -78,8 +79,8 @@ pub fn compress(src: &[u8], mode: Option<CompressionMode>, prepend_size: bool) -
         dec_size = match mode {
             Some(CompressionMode::HIGHCOMPRESSION(level)) => unsafe {
                 LZ4_compress_HC(
-                    src.as_ptr() as *const i8,
-                    dst_buf.as_mut_ptr() as *mut i8,
+                    src.as_ptr() as *const c_char,
+                    dst_buf.as_mut_ptr() as *mut c_char,
                     src.len() as i32,
                     compress_bound,
                     level,
@@ -87,8 +88,8 @@ pub fn compress(src: &[u8], mode: Option<CompressionMode>, prepend_size: bool) -
             },
             Some(CompressionMode::FAST(accel)) => unsafe {
                 LZ4_compress_fast(
-                    src.as_ptr() as *const i8,
-                    dst_buf.as_mut_ptr() as *mut i8,
+                    src.as_ptr() as *const c_char,
+                    dst_buf.as_mut_ptr() as *mut c_char,
                     src.len() as i32,
                     compress_bound,
                     accel,
@@ -96,8 +97,8 @@ pub fn compress(src: &[u8], mode: Option<CompressionMode>, prepend_size: bool) -
             },
             _ => unsafe {
                 LZ4_compress_default(
-                    src.as_ptr() as *const i8,
-                    dst_buf.as_mut_ptr() as *mut i8,
+                    src.as_ptr() as *const c_char,
+                    dst_buf.as_mut_ptr() as *mut c_char,
                     src.len() as i32,
                     compress_bound,
                 )
@@ -161,8 +162,8 @@ pub fn decompress(mut src: &[u8], uncompressed_size: Option<i32>) -> Result<Vec<
     let mut decompressed = vec![0u8; size as usize];
     let dec_bytes = unsafe {
         LZ4_decompress_safe(
-            src.as_ptr() as *const i8,
-            decompressed.as_mut_ptr() as *mut i8,
+            src.as_ptr() as *const c_char,
+            decompressed.as_mut_ptr() as *mut c_char,
             src.len() as i32,
             size,
         )
