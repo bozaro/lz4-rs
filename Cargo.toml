@@ -1,7 +1,7 @@
 [package]
 name = "lz4"
 license = "MIT"
-version = "1.23.0"
+version = "1.23.1"
 readme = "README.md"
 authors = [ "Jens Heyens <jens.heyens@ewetel.net>", "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "build.rs"
@@ -15,11 +15,11 @@ test = false
 doc = false
 
 [dependencies]
-libc = "0.2.43"
-lz4-sys = { path = "lz4-sys", version = "1.8.2" }
+libc = "0.2.44"
+lz4-sys = { path = "lz4-sys", version = "1.8.3" }
 
 [dev-dependencies]
-rand = "0.5.5"
+rand = "0.6.1"
 skeptic = "0.13.3"
 
 [build-dependencies]
