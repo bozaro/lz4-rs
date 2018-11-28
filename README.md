@@ -16,7 +16,7 @@ LZ4 is a very fast lossless compression algorithm, providing compression speed a
 Put this in your `Cargo.toml`:
 ```toml
 [dependencies]
-lz4 = "*"
+lz4 = "1.23.1"
 ```
 
 Sample code for compression/decompression:
