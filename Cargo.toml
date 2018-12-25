@@ -4,7 +4,6 @@ license = "MIT"
 version = "1.23.1"
 readme = "README.md"
 authors = [ "Jens Heyens <jens.heyens@ewetel.net>", "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
-build = "build.rs"
 description = "Rust LZ4 bindings library."
 repository = "https://github.com/bozaro/lz4-rs"
 documentation = "https://bozaro.github.io/lz4-rs/lz4/"
@@ -20,7 +19,4 @@ lz4-sys = { path = "lz4-sys", version = "1.8.3" }
 
 [dev-dependencies]
 rand = "0.6.1"
-skeptic = "0.13.3"
-
-[build-dependencies]
-skeptic = "0.13.3"
+docmatic = "0.1"
