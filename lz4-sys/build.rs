@@ -3,6 +3,12 @@ extern crate cc;
 use std::env;
 
 fn main() {
+    println!("cargo:rerun-if-env-changed=LZ4_API_STATIC");
+    let want_static = env::var("LZ4_API_STATIC").is_ok();
+    if !want_static && pkg_config::probe_library("liblz4").is_ok() {
+        return;
+    }
+
     let mut compiler = cc::Build::new();
     compiler
         .file("liblz4/lib/lz4.c")
