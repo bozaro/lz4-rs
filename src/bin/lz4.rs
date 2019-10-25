@@ -1,11 +1,11 @@
 extern crate lz4;
 
-use std::iter::FromIterator;
 use std::env;
 use std::fs::File;
-use std::io::Result;
 use std::io::Read;
+use std::io::Result;
 use std::io::Write;
+use std::iter::FromIterator;
 use std::path::Path;
 
 fn main() {
@@ -13,9 +13,10 @@ fn main() {
     let suffix = ".lz4";
     for arg in Vec::from_iter(env::args())[1..].iter() {
         if arg.ends_with(suffix) {
-            decompress(&Path::new(arg),
-                       &Path::new(&arg[0..arg.len() - suffix.len()]))
-                .unwrap();
+            decompress(
+                &Path::new(arg),
+                &Path::new(&arg[0..arg.len() - suffix.len()]),
+            ).unwrap();
         } else {
             compress(&Path::new(arg), &Path::new(&(arg.to_string() + suffix))).unwrap();
         }
