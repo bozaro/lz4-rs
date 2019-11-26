@@ -119,8 +119,8 @@ impl Drop for DecoderContext {
 mod test {
     extern crate rand;
 
-    use self::rand::Rng;
     use self::rand::rngs::StdRng;
+    use self::rand::Rng;
     use super::super::encoder::{Encoder, EncoderBuilder};
     use super::Decoder;
     use std::io::{Cursor, Error, ErrorKind, Read, Result, Write};

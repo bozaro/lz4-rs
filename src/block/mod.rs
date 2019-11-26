@@ -203,7 +203,8 @@ mod test {
                     &to_compress,
                     Some(CompressionMode::HIGHCOMPRESSION(i)),
                     false,
-                ).unwrap(),
+                )
+                .unwrap(),
             );
         }
 
@@ -236,7 +237,8 @@ mod test {
                     &to_compress,
                     Some(CompressionMode::HIGHCOMPRESSION(i)),
                     true,
-                ).unwrap(),
+                )
+                .unwrap(),
             );
         }
 

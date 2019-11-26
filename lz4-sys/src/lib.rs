@@ -1,4 +1,5 @@
 #![no_std]
+#![deny(warnings)]
 extern crate libc;
 
 use libc::{c_void, c_char, c_uint, size_t, c_int};
