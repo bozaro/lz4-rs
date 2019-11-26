@@ -2,14 +2,14 @@
 name = "lz4-sys"
 license = "MIT"
 links = "lz4"
-version = "1.8.3"
+version = "1.9.2"
 authors = [ "Jens Heyens <jens.heyens@ewetel.net", "Artem V. Navrotskiy <bozaro@buzzsoft.ru>" ]
 build = "build.rs"
 description = "Rust LZ4 sys package."
 repository = "https://github.com/bozaro/lz4-rs"
 
 [dependencies]
-libc = "0.2.44"
+libc = "0.2"
 
 [build-dependencies]
-cc = "1.0.25"
+cc = "1.0"
