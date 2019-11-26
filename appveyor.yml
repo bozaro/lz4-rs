@@ -1,0 +1,42 @@
+image:
+  - Ubuntu
+  - Visual Studio 2019
+build: off
+environment:
+  matrix:
+    - RUST_TOOL_CHAIN: stable
+    - RUST_TOOL_CHAIN: beta
+    - RUST_TOOL_CHAIN: nightly
+branches:
+  only:
+    - master
+pull_requests:
+  do_not_increment_build_number: true
+matrix:
+  fast_finish: true
+install:
+  - git submodule update --init --recursive
+build_script:
+  - cargo build --release
+test_script:
+  - cargo test --release
+  - cargo fmt --all -- --check
+for:
+  - matrix:
+      only:
+        - image: Ubuntu
+    init:
+      - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_TOOL_CHAIN}
+      - source $HOME/.cargo/env
+      - rustc -V
+      - cargo -V
+  - matrix:
+      only:
+        - image: Visual Studio 2019
+    init:
+      - ps: iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
+      - scoop install rustup
+      - refreshenv
+      - rustup default %RUST_TOOL_CHAIN%
+      - rustc -V
+      - cargo -V

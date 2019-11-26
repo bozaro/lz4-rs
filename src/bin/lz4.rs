@@ -16,7 +16,8 @@ fn main() {
             decompress(
                 &Path::new(arg),
                 &Path::new(&arg[0..arg.len() - suffix.len()]),
-            ).unwrap();
+            )
+            .unwrap();
         } else {
             compress(&Path::new(arg), &Path::new(&(arg.to_string() + suffix))).unwrap();
         }

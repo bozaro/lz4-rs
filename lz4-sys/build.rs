@@ -1,8 +1,8 @@
 extern crate cc;
 
-use std::{env, fs, process};
 use std::error::Error;
 use std::path::PathBuf;
+use std::{env, fs, process};
 
 fn main() {
     match run() {
@@ -27,11 +27,10 @@ fn run() -> Result<(), Box<dyn Error>> {
         .map_err(|err| format!("reading TARGET environment variable: {}", err))?
         .as_str()
     {
-      "i686-pc-windows-gnu" => {
-        compiler
-            .flag("-fno-tree-vectorize");
-      },
-      _ => {}
+        "i686-pc-windows-gnu" => {
+            compiler.flag("-fno-tree-vectorize");
+        }
+        _ => {}
     }
     compiler.compile("liblz4.a");
 
@@ -42,13 +41,16 @@ fn run() -> Result<(), Box<dyn Error>> {
         .map_err(|err| format!("creating directory {}: {}", include.display(), err))?;
     for e in fs::read_dir(&src)? {
         let e = e?;
-        let utf8_file_name = e.file_name().into_string()
+        let utf8_file_name = e
+            .file_name()
+            .into_string()
             .map_err(|_| format!("unable to convert file name {:?} to UTF-8", e.file_name()))?;
         if utf8_file_name.ends_with(".h") {
             let from = e.path();
             let to = include.join(e.file_name());
-            fs::copy(&from, &to)
-                .map_err(|err| format!("copying {} to {}: {}", from.display(), to.display(), err))?;
+            fs::copy(&from, &to).map_err(|err| {
+                format!("copying {} to {}: {}", from.display(), to.display(), err)
+            })?;
         }
     }
     println!("cargo:root={}", dst.display());
