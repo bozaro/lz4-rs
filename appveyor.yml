@@ -14,7 +14,7 @@ pull_requests:
   do_not_increment_build_number: true
 matrix:
   fast_finish: true
-init:
+install:
   - git submodule update --init --recursive
 build_script:
   - cargo build --release
@@ -25,7 +25,7 @@ for:
   - matrix:
       only:
         - image: Ubuntu
-    install:
+    init:
       - curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain ${RUST_TOOL_CHAIN}
       - source $HOME/.cargo/env
       - rustc -V
@@ -33,7 +33,7 @@ for:
   - matrix:
       only:
         - image: Visual Studio 2019
-    install:
+    init:
       - ps: iex (new-object net.webclient).downloadstring('https://get.scoop.sh')
       - scoop install rustup
       - refreshenv
