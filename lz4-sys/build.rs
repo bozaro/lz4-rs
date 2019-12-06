@@ -5,6 +5,14 @@ use std::error::Error;
 use std::path::PathBuf;
 
 fn main() {
+    let k = "LZ4_SYS_DELEGATE_LINKING";
+
+    println!("cargo:rerun-if-env-changed={}", k);
+
+    if env::var(k).is_ok() {
+        return;
+    }
+
     match run() {
         Ok(()) => (),
         Err(err) => {
