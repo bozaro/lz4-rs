@@ -11,6 +11,7 @@ pub mod block;
 pub use decoder::Decoder;
 pub use encoder::Encoder;
 pub use encoder::EncoderBuilder;
+pub use encoder::EncoderDictionary;
 pub use liblz4::version;
 pub use liblz4::BlockMode;
 pub use liblz4::BlockSize;
