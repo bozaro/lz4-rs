@@ -88,6 +88,12 @@ pub struct LZ4StreamEncode(c_void);
 #[repr(C)]
 pub struct LZ4StreamDecode(c_void);
 
+#[derive(Clone, Copy)]
+#[repr(C)]
+pub struct LZ4FCDict(pub *mut c_void);
+unsafe impl Send for LZ4FCDict {}
+unsafe impl Sync for LZ4FCDict {}
+
 pub const LZ4F_VERSION: c_uint = 100;
 
 extern "C" {
@@ -136,6 +142,16 @@ extern "C" {
     //                                  LZ4F_compressionContext_t LZ4F_compressionContext);
     pub fn LZ4F_freeCompressionContext(ctx: LZ4FCompressionContext) -> LZ4FErrorCode;
 
+    // LZ4_createCDict() :
+    // When compressing multiple messages / blocks with the same dictionary, it's recommended to load it just once.
+    // LZ4_createCDict() will create a digested dictionary, ready to start future compression operations without startup delay.
+    // LZ4_CDict can be created once and shared by multiple threads concurrently, since its usage is read-only.
+    // `dictBuffer` can be released after LZ4_CDict creation, since its content is copied within CDict.
+    // LZ4F_CDict* LZ4F_createCDict(const void* dictBuffer, size_t dictSize);
+    // void        LZ4F_freeCDict(LZ4F_CDict* CDict);
+    pub fn LZ4F_createCDict(dictBuffer: *const u8, dictSize: size_t) -> LZ4FCDict;
+    pub fn LZ4F_freeCDict(CDict: LZ4FCDict);
+
     // LZ4F_compressBegin() :
     // will write the frame header into dstBuffer.
     // dstBuffer must be large enough to accommodate a header (dstMaxSize). Maximum header
@@ -154,6 +170,25 @@ extern "C" {
                               dstMaxSize: size_t,
                               preferencesPtr: *const LZ4FPreferences)
                               -> LZ4FErrorCode;
+
+    // LZ4F_compressBegin_usingCDict() :
+    // Inits streaming dictionary compression, and writes the frame header into dstBuffer.
+    // dstCapacity must be >= LZ4F_HEADER_SIZE_MAX bytes.
+    // `prefsPtr` is optional : you may provide NULL as argument,
+    // however, it's the only way to provide dictID in the frame header.
+    // @return : number of bytes written into dstBuffer for the header,
+    //           or an error code (which can be tested using LZ4F_isError()) */
+    // size_t LZ4F_compressBegin_usingCDict(
+    //         LZ4F_cctx* cctx,
+    //         void* dstBuffer, size_t dstCapacity,
+    //         const LZ4F_CDict* cdict,
+    //         const LZ4F_preferences_t* prefsPtr);
+    pub fn LZ4F_compressBegin_usingCDict(ctx: LZ4FCompressionContext,
+        dstBuffer: *mut u8,
+        dstCapacity: size_t,
+        cdict: LZ4FCDict,
+        prefsPtr: *const LZ4FPreferences)
+         -> LZ4FErrorCode;
 
     // LZ4F_compressBound() :
     // Provides the minimum size of Dst buffer given srcSize to handle worst case situations.
@@ -316,6 +351,26 @@ extern "C" {
                            srcSizePtr: &mut size_t,
                            optionsPtr: *const LZ4FDecompressOptions)
                            -> LZ4FErrorCode;
+
+    // LZ4F_decompress_usingDict() :
+    // Same as LZ4F_decompress(), using a predefined dictionary.
+    // Dictionary is used "in place", without any preprocessing.
+    // It must remain accessible throughout the entire frame decoding. */
+    // size_t LZ4F_decompress_usingDict(
+    //         LZ4F_dctx* dctxPtr,
+    //         void* dstBuffer, size_t* dstSizePtr,
+    //         const void* srcBuffer, size_t* srcSizePtr,
+    //         const void* dict, size_t dictSize,
+    //         const LZ4F_decompressOptions_t* decompressOptionsPtr);
+    pub fn LZ4F_decompress_usingDict(ctx: LZ4FDecompressionContext,
+                                     dstBuffer: *mut u8,
+                                     dstSizePtr: &mut size_t,
+                                     srcBuffer: *const u8,
+                                     srcSizePtr: &mut size_t,
+                                     dict: *const u8,
+                                     dictSize: size_t,
+                                     optionsPtr: *const LZ4FDecompressOptions)
+                                     -> LZ4FErrorCode;
 
     // int LZ4_versionNumber(void)
     pub fn LZ4_versionNumber() -> c_int;

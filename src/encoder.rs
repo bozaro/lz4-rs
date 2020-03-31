@@ -3,14 +3,19 @@ use libc::size_t;
 use std::cmp;
 use std::io::Result;
 use std::io::Write;
+use std::io::{Error, ErrorKind};
 use std::ptr;
 
 struct EncoderContext {
     c: LZ4FCompressionContext,
 }
 
+pub struct EncoderDictionary {
+    cdict: LZ4FCDict,
+}
+
 #[derive(Clone)]
-pub struct EncoderBuilder {
+pub struct EncoderBuilder<'a> {
     block_size: BlockSize,
     block_mode: BlockMode,
     checksum: ContentChecksum,
@@ -18,6 +23,7 @@ pub struct EncoderBuilder {
     level: u32,
     // 1 == always flush (reduce need for tmp buffer)
     auto_flush: bool,
+    dictionary: Option<&'a EncoderDictionary>,
 }
 
 pub struct Encoder<W> {
@@ -27,7 +33,30 @@ pub struct Encoder<W> {
     buffer: Vec<u8>,
 }
 
-impl EncoderBuilder {
+impl EncoderDictionary {
+    pub fn new(dict: &[u8]) -> Result<EncoderDictionary> {
+        let cdict = unsafe { LZ4F_createCDict(dict.as_ptr(), dict.len()) };
+
+        if cdict.0.is_null() {
+            Err(Error::new(
+                ErrorKind::Other,
+                LZ4Error::new(String::from("Failed to create CDict.")),
+            ))
+        } else {
+            Ok(EncoderDictionary { cdict })
+        }
+    }
+}
+
+impl Drop for EncoderDictionary {
+    fn drop(&mut self) {
+        unsafe {
+            LZ4F_freeCDict(self.cdict);
+        }
+    }
+}
+
+impl<'a> EncoderBuilder<'a> {
     pub fn new() -> Self {
         EncoderBuilder {
             block_size: BlockSize::Default,
@@ -35,6 +64,7 @@ impl EncoderBuilder {
             checksum: ContentChecksum::ChecksumEnabled,
             level: 0,
             auto_flush: false,
+            dictionary: None,
         }
     }
 
@@ -63,6 +93,11 @@ impl EncoderBuilder {
         self
     }
 
+    pub fn dictionary(&mut self, dictionary: &'a EncoderDictionary) -> &mut Self {
+        self.dictionary = Some(dictionary);
+        self
+    }
+
     pub fn build<W: Write>(&self, w: W) -> Result<Encoder<W>> {
         let block_size = self.block_size.get_size();
         let preferences = LZ4FPreferences {
@@ -87,7 +122,15 @@ impl EncoderBuilder {
                 LZ4F_compressBound(block_size as size_t, &preferences)
             }))),
         };
-        try!(encoder.write_header(&preferences));
+        match &self.dictionary {
+            Some(dict) => {
+                try!(encoder.write_header_with_dict(&preferences, dict));
+            }
+            None => {
+                try!(encoder.write_header(&preferences));
+            }
+        }
+
         Ok(encoder)
     }
 }
@@ -99,6 +142,24 @@ impl<W: Write> Encoder<W> {
                 self.c.c,
                 self.buffer.as_mut_ptr(),
                 self.buffer.capacity() as size_t,
+                preferences
+            )));
+            self.buffer.set_len(len);
+        }
+        self.w.write_all(&self.buffer)
+    }
+
+    fn write_header_with_dict(
+        &mut self,
+        preferences: &LZ4FPreferences,
+        dict: &EncoderDictionary,
+    ) -> Result<()> {
+        unsafe {
+            let len = try!(check_error(LZ4F_compressBegin_usingCDict(
+                self.c.c,
+                self.buffer.as_mut_ptr(),
+                self.buffer.capacity() as size_t,
+                dict.cdict,
                 preferences
             )));
             self.buffer.set_len(len);
@@ -194,6 +255,7 @@ impl Drop for EncoderContext {
 #[cfg(test)]
 mod test {
     use super::EncoderBuilder;
+    use super::EncoderDictionary;
     use std::io::Write;
 
     #[test]
@@ -224,5 +286,20 @@ mod test {
         fn check_send<S: Send>(_: &S) {}
         let enc = EncoderBuilder::new().build(Vec::new());
         check_send(&enc);
+    }
+
+    #[test]
+    fn test_encoder_dictionary() {
+        let dictionary = EncoderDictionary::new(b"dictionary").unwrap();
+        let mut encoder = EncoderBuilder::new()
+            .level(1)
+            .dictionary(&dictionary)
+            .build(Vec::new())
+            .unwrap();
+        encoder
+            .write(b"dictionary compression is good for small files")
+            .unwrap();
+        let (_, result) = encoder.finish();
+        result.unwrap();
     }
 }
