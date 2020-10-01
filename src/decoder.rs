@@ -19,21 +19,24 @@ pub struct Decoder<R> {
 }
 
 impl<R: Read> Decoder<R> {
-    /// Creates a new encoder which will have its output written to the given
-    /// output stream. The output stream can be re-acquired by calling
-    /// `finish()`
+    /// Creates a new decoder.
     pub fn new(r: R) -> Result<Decoder<R>> {
-        Self::with_capacity(r, BUFFER_SIZE)
+        Self::with_buf(r, vec![0; BUFFER_SIZE].into_boxed_slice())
     }
 
-    /// Similar to `new` but allows sizing of the internal buffer
+    /// Create a new decoder with an internal buffer of size `capacity`.
     pub fn with_capacity(r: R, capacity: usize) -> Result<Decoder<R>> {
+        Self::with_buf(r, vec![0; capacity].into_boxed_slice())
+    }
+
+    /// Create a new decoder which uses `buf` as it's internal buffer.
+    pub fn with_buf(r: R, buf: Box<[u8]>) -> Result<Decoder<R>> {
         Ok(Decoder {
             r,
             c: DecoderContext::new()?,
-            buf: vec![0; capacity].into_boxed_slice(),
-            pos: capacity,
-            len: capacity,
+            pos: buf.len(),
+            len: buf.len(),
+            buf,
             // Minimal LZ4 stream size
             next: 11,
         })
@@ -44,9 +47,25 @@ impl<R: Read> Decoder<R> {
         &self.r
     }
 
+    /// Drops decoder and returns the reader along with the result of the decode.
     pub fn finish(self) -> (R, Result<()>) {
         (
             self.r,
+            match self.next {
+                0 => Ok(()),
+                _ => Err(Error::new(
+                    ErrorKind::Interrupted,
+                    "Finish ran before end of compressed stream",
+                )),
+            },
+        )
+    }
+
+    /// Similar to `finish` but also returns the internal buffer for re-use
+    pub fn finish_into_parts(self) -> (R, Box<[u8]>, Result<()>) {
+        (
+            self.r,
+            self.buf,
             match self.next {
                 0 => Ok(()),
                 _ => Err(Error::new(
