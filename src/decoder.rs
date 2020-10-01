@@ -19,16 +19,24 @@ pub struct Decoder<R> {
 }
 
 impl<R: Read> Decoder<R> {
-    /// Creates a new encoder which will have its output written to the given
-    /// output stream. The output stream can be re-acquired by calling
-    /// `finish()`
+    /// Creates a new decoder.
     pub fn new(r: R) -> Result<Decoder<R>> {
+        Self::with_buf(r, vec![0; BUFFER_SIZE].into_boxed_slice())
+    }
+
+    /// Create a new decoder with an internal buffer of size `capacity`.
+    pub fn with_capacity(r: R, capacity: usize) -> Result<Decoder<R>> {
+        Self::with_buf(r, vec![0; capacity].into_boxed_slice())
+    }
+
+    /// Create a new decoder which uses `buf` as it's internal buffer.
+    pub fn with_buf(r: R, buf: Box<[u8]>) -> Result<Decoder<R>> {
         Ok(Decoder {
-            r: r,
-            c: try!(DecoderContext::new()),
-            buf: vec![0; BUFFER_SIZE].into_boxed_slice(),
-            pos: BUFFER_SIZE,
-            len: BUFFER_SIZE,
+            r,
+            c: DecoderContext::new()?,
+            pos: buf.len(),
+            len: buf.len(),
+            buf,
             // Minimal LZ4 stream size
             next: 11,
         })
@@ -39,9 +47,25 @@ impl<R: Read> Decoder<R> {
         &self.r
     }
 
+    /// Drops decoder and returns the reader along with the result of the decode.
     pub fn finish(self) -> (R, Result<()>) {
         (
             self.r,
+            match self.next {
+                0 => Ok(()),
+                _ => Err(Error::new(
+                    ErrorKind::Interrupted,
+                    "Finish ran before end of compressed stream",
+                )),
+            },
+        )
+    }
+
+    /// Similar to `finish` but also returns the internal buffer for re-use
+    pub fn finish_into_parts(self) -> (R, Box<[u8]>, Result<()>) {
+        (
+            self.r,
+            self.buf,
             match self.next {
                 0 => Ok(()),
                 _ => Err(Error::new(
@@ -232,6 +256,23 @@ mod test {
         let buffer = finish_encode(encoder);
 
         let mut decoder = Decoder::new(Cursor::new(buffer)).unwrap();
+        let mut actual = Vec::new();
+
+        decoder.read_to_end(&mut actual).unwrap();
+        assert_eq!(expected, actual);
+        finish_decode(decoder);
+    }
+
+    #[test]
+    fn test_decoder_capacity() {
+        let mut encoder = EncoderBuilder::new().level(1).build(Vec::new()).unwrap();
+        let mut expected = Vec::new();
+        expected.write(b"Some data").unwrap();
+        encoder.write(&expected[..4]).unwrap();
+        encoder.write(&expected[4..]).unwrap();
+        let buffer = finish_encode(encoder);
+
+        let mut decoder = Decoder::with_capacity(Cursor::new(buffer), 1024).unwrap();
         let mut actual = Vec::new();
 
         decoder.read_to_end(&mut actual).unwrap();
